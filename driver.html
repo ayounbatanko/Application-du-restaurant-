@@ -1,6 +1,6 @@
-<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Livreur RestoGest</title><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#14213d"><link rel="apple-touch-icon" href="icon-192.png"><link rel="stylesheet" href="css/style.css"></head><body>
+<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Livreur RestoGest</title><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#14213d"><link rel="apple-touch-icon" href="icon-192.png"><link rel="stylesheet" href="style.css"></head><body>
 <div id="hdr"></div><main id="m"></main>
-<script src="js/app.js"></script><script>
+<script src="app.js"></script><script>
 const U=guard('driver');let sig='',myPos=null;
 const rest=()=>D.get().rests.find(r=>r.id==U.restId);
 const mine=()=>D.get().orders.filter(o=>o.driverId==U.id&&!['terminée','annulée','refusée'].includes(o.status));
