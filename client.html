@@ -1,0 +1,142 @@
+<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Client</title><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#14213d"><link rel="apple-touch-icon" href="icon-192.png"><link rel="stylesheet" href="css/style.css"><style>
+.menu-search{width:100%;margin:10px 0 14px;padding:12px 14px;border-radius:12px;border:1.5px solid var(--bd);font:inherit}
+.cart-bar{position:sticky;bottom:12px;z-index:6;background:linear-gradient(135deg,#14213d,#26417a);color:#fff;border-radius:16px;padding:14px 16px;box-shadow:0 10px 28px rgba(20,33,61,.35);display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.cart-bar b{color:#ffb703}
+.gps-box{border:1.5px dashed var(--bd);border-radius:14px;padding:12px;background:rgba(38,65,122,.06)}
+.gps-ok{border-color:var(--ok);background:rgba(18,163,107,.1)}
+.gps-need{border-color:var(--gold2);background:rgba(255,183,3,.12)}
+.qty-row{display:flex;align-items:center;gap:8px}
+.qty-row span{min-width:28px;text-align:center;font-weight:700}
+</style></head><body>
+<div id="hdr"></div><nav id="nav"></nav><main id="m"></main><div id="receipt"></div>
+<script src="js/app.js"></script><script>
+const U=guard('client');let tab='restos',cur=null,cart={},pos=null,seen=null,seenSig='',menuQ='';
+// Demander la localisation dès l'arrivée
+if(navigator.geolocation){
+  navigator.geolocation.getCurrentPosition(
+    p=>{pos=[p.coords.latitude,p.coords.longitude];window._clientGpsAccuracy=Math.round(p.coords.accuracy);if(tab=='restos'&&!cur)render()},
+    ()=>{},
+    {enableHighAccuracy:true,timeout:15000,maximumAge:60000}
+  );
+}
+const ST=['en attente','acceptée','préparée','colis récupéré','en route','arrivé','terminée'];
+function render(){hdr(U.name);nav.innerHTML=['restos','myorders'].map(k=>`<button class="${k==tab?'on':''}" onclick="tab='${k}';cur=null;menuQ='';render()">${t(k)}</button>`).join('');m.innerHTML=(tab=='restos'?(cur?menu():list()):orders())+(cur?'':passwordCard())}
+function dist(d){return d==null?'':d<1?' — '+Math.round(d*1000)+' m':' — '+d.toFixed(1)+' km'}
+function list(){let rs=D.get().rests.filter(r=>subInfo(r).ok);
+ rs=rs.map(r=>({r,d:pos&&r.lat!=null&&r.lng!=null?km(pos,[r.lat,r.lng]):null})).sort((a,b)=>(a.d??1e9)-(b.d??1e9));
+ const head=pos
+  ?'<h3>Restaurants les plus proches de vous</h3><p class="mut">Triés par distance grâce à votre position GPS et celle des restaurants.</p>'
+  :'<p class="mut">Activez la localisation pour voir les restaurants les plus proches et pour commander.</p><button class="sec" onclick="capturePos(()=>render())">📍 Activer ma localisation</button>';
+ return head+rs.map(({r,d})=>`<div class="card"><div class="row">${r.logo?`<img class="logo" src="${r.logo}">`:'<div class="logo"></div>'}<div class="g"><b>${esc(r.name)}</b><div class="mut">${esc(r.address||'')}${dist(d)}${!r.lat?' · position non renseignée':''}</div>${r.lat!=null&&r.lng!=null?`<a class="mut" target="_blank" rel="noopener" href="https://www.google.com/maps?q=${r.lat},${r.lng}">Voir le restaurant sur Google Maps</a>`:''}</div><button onclick="openRest('${r.id}')">Voir toute la carte</button></div>
+ ${r.menu.length?`<div class="gal pv">${r.menu.slice(0,10).map(p=>`<div class="pvi" onclick="openRest('${r.id}')">${p.imgs&&p.imgs[0]?`<img src="${p.imgs[0]}" alt="">`:'<div class="ph2">🍽️</div>'}<b>${esc(p.n)}</b><span>${money(p.p,r.currency)}</span></div>`).join('')}</div>`:'<p class="mut">Catalogue bientôt disponible.</p>'}</div>`).join('')||'<p class="mut">Aucun restaurant disponible pour le moment.</p>'}
+function openRest(id){cur=id;cart={};menuQ='';render()}
+function menu(){const r=D.get().rests.find(r=>r.id==cur);if(!r){cur=null;return list()}
+ const q=(menuQ||'').trim().toLowerCase();
+ const dishes=r.menu.filter(p=>!q||(p.n||'').toLowerCase().includes(q)||(p.desc||'').toLowerCase().includes(q));
+ const items=r.menu.filter(p=>cart[p.n]>0).map(p=>({n:p.n,p:p.p,q:cart[p.n]}));
+ const tot=items.reduce((a,i)=>a+i.p*i.q,0);
+ const nItems=items.reduce((a,i)=>a+i.q,0);
+ const gpsClass=pos?'gps-ok':'gps-need';
+ const gpsText=pos
+  ? `✅ Position GPS enregistrée : ${pos[0].toFixed(5)}, ${pos[1].toFixed(5)}`
+  : '⚠️ Activez votre localisation GPS avant de commander (obligatoire pour la livraison).';
+ return `<button class="sec" onclick="cur=null;menuQ='';render()">← Retour</button>
+ <h2>${esc(r.name)}</h2>
+ <input class="menu-search" id="menuSearch" type="search" placeholder="🔍 Rechercher un plat par nom…" value="${esc(menuQ)}" oninput="menuQ=this.value;renderMenuOnly()">
+ <div id="menuList">${renderDishes(r,dishes)}</div>
+ <div class="card col">
+  <b>Votre panier ${nItems?`(${nItems} article${nItems>1?'s':''})`:''}</b>
+  ${items.length?`<div>${items.map(i=>`${esc(i.n)} ×${i.q} — ${money(i.p*i.q,r.currency)}`).join('<br>')}</div><div class="kpi" style="font-size:22px">${money(tot,r.currency)}</div>`:'<p class="mut">Ajoutez plusieurs plats avec les boutons + / −.</p>'}
+  <input id="ad" placeholder="Adresse / complément (quartier, porte, repère)">
+  <div class="gps-box ${gpsClass}" id="gpsbox">
+   <div id="gpsmsg" class="mut">${gpsText}</div>
+   <div class="row" style="margin-top:8px">
+    <button type="button" class="sec" onclick="capturePos()">📍 ${pos?'Actualiser ma position':'Activer ma localisation GPS'}</button>
+    <span id="gpsmap">${pos?`<a target="_blank" rel="noopener" href="https://www.google.com/maps?q=${pos[0]},${pos[1]}">Voir sur Google Maps</a>`:''}</span>
+   </div>
+  </div>
+  <select id="py"><option>Paiement à la livraison</option>${r.pay.map(p=>`<option>${esc(p)}</option>`).join('')}</select>
+  <button onclick="order()" ${tot?'':'disabled'}>Commander ${tot?money(tot,r.currency):''}</button>
+  <p class="mut">La localisation GPS est obligatoire pour envoyer la commande au restaurant et au livreur.</p>
+ </div>
+ ${nItems?`<div class="cart-bar"><span>🛒 <b>${nItems}</b> plat${nItems>1?'s':''} · <b>${money(tot,r.currency)}</b></span><button onclick="document.getElementById('ad')?.scrollIntoView({behavior:'smooth'})">Voir le panier</button></div>`:''}`}
+function renderDishes(r,dishes){
+ if(!dishes.length)return '<p class="mut">Aucun plat ne correspond à votre recherche.</p>';
+ return dishes.map((p,idx)=>{
+  const key=p.n;
+  const qty=cart[key]||0;
+  return `<div class="card">${gal(p.imgs)}<div class="row"><div class="g"><b>${esc(p.n)}</b><div class="mut">${esc(p.desc||'')}</div><b style="color:var(--acc)">${money(p.p,r.currency)}</b></div>
+  <div class="qty-row"><button class="sec" type="button" onclick="qByName(${JSON.stringify(key)},-1)">−</button><span>${qty}</span><button type="button" onclick="qByName(${JSON.stringify(key)},1)">+</button></div></div></div>`}).join('')}
+function renderMenuOnly(){
+ const r=D.get().rests.find(r=>r.id==cur);if(!r)return;
+ const q=(menuQ||'').trim().toLowerCase();
+ const dishes=r.menu.filter(p=>!q||(p.n||'').toLowerCase().includes(q)||(p.desc||'').toLowerCase().includes(q));
+ const el=document.getElementById('menuList');
+ if(el)el.innerHTML=renderDishes(r,dishes);
+ // keep search focus/caret roughly
+ const s=document.getElementById('menuSearch');if(s){s.focus();try{s.setSelectionRange(s.value.length,s.value.length)}catch(e){}}
+}
+function showGPS(){
+ const msg=document.getElementById('gpsmsg'),map=document.getElementById('gpsmap'),box=document.getElementById('gpsbox');
+ if(!pos)return;
+ if(msg)msg.textContent='✅ Position GPS enregistrée : '+pos[0].toFixed(5)+', '+pos[1].toFixed(5);
+ if(map)map.innerHTML='<a target="_blank" rel="noopener" href="https://www.google.com/maps?q='+pos[0]+','+pos[1]+'">Voir sur Google Maps</a>';
+ if(box){box.classList.remove('gps-need');box.classList.add('gps-ok')}
+}
+function capturePos(done){
+ if(!navigator.geolocation){alert('La géolocalisation n’est pas disponible sur cet appareil.');return}
+ const msg=document.getElementById('gpsmsg');if(msg)msg.textContent='Recherche de votre position GPS…';
+ navigator.geolocation.getCurrentPosition(
+  p=>{pos=[p.coords.latitude,p.coords.longitude];window._clientGpsAccuracy=Math.round(p.coords.accuracy);showGPS();toast('Position GPS activée');if(typeof done==='function')done()},
+  e=>{if(msg)msg.textContent='❌ Position non obtenue. Activez le GPS et autorisez la localisation.';alert('Impossible de récupérer votre position.\\n\\n1. Activez le GPS du téléphone\\n2. Autorisez la localisation pour ce site\\n3. Réessayez');},
+  {enableHighAccuracy:true,timeout:20000,maximumAge:0}
+ )}
+function qByName(n,v){cart[n]=Math.max(0,(cart[n]||0)+v);if(!cart[n])delete cart[n];render()}
+function order(){
+ const r=D.get().rests.find(r=>r.id==cur);
+ const items=(r?.menu||[]).filter(p=>cart[p.n]>0).map(p=>({n:p.n,p:p.p,q:cart[p.n]}));
+ if(!items.length)return alert('Ajoutez au moins un plat dans votre panier.');
+ // Localisation OBLIGATOIRE
+ if(!pos){
+  alert('Vous devez activer votre localisation GPS avant de commander.\\nLe restaurant et le livreur recevront vos coordonnées sur Google Maps.');
+  return capturePos(()=>order());
+ }
+ const addrEl=document.getElementById('ad');
+ const pyEl=document.getElementById('py');
+ const d=D.get();
+ d.orders.push({
+  id:uid(),
+  restId:r.id,
+  clientId:U.id,
+  clientName:U.name,
+  clientPhone:U.phone,
+  items,
+  total:items.reduce((a,i)=>a+i.p*i.q,0),
+  status:'en attente',
+  pay:pyEl?pyEl.value:'Paiement à la livraison',
+  addr:(addrEl&&addrEl.value.trim())||'Position GPS du client',
+  cLat:pos[0],
+  cLng:pos[1],
+  locationAccuracy:window._clientGpsAccuracy||null,
+  locationCapturedAt:Date.now(),
+  created:Date.now()
+ });
+ D.save(d);
+ cart={};cur=null;tab='myorders';menuQ='';
+ notify('Commande envoyée ✓','Le restaurant '+r.name+' a reçu votre position GPS');
+ render();
+}
+function orders(){const d=D.get();return d.orders.filter(o=>o.clientId==U.id).reverse().map(o=>{const r=d.rests.find(r=>r.id==o.restId),i=ST.indexOf(o.status),end=['refusée','annulée'].includes(o.status);
+ const dest=o.cLat!=null?o.cLat+','+o.cLng:encodeURIComponent(o.addr),src=o.driverPos?o.driverPos.join(','):'';
+ return `<div class="card"><div class="row"><b>${esc(r?.name)}</b> <span class="badge" data-s="${o.status}">${o.status}</span><span class="mut">#${o.id} — ${fdate(o.created)}</span></div>
+ <div>${o.items.map(x=>`${esc(x.n)} ×${x.q}`).join(', ')} — <b>${money(o.total,r?.currency)}</b></div>
+ ${o.cLat!=null?`<div class="mut">📍 Position envoyée : <a target="_blank" rel="noopener" href="https://www.google.com/maps?q=${o.cLat},${o.cLng}">Voir sur Google Maps</a></div>`:''}
+ ${end?'':`<div class="mut">${ST.map((s,k)=>k<=i?`<b>${s}</b>`:s).join(' › ')}</div>`}
+ ${o.status=='en route'?`<iframe src="https://maps.google.com/maps?saddr=${src}&daddr=${dest}&output=embed"></iframe>`:''}
+ <div class="row">${!end&&o.status!='terminée'?`<button class="bad" onclick="cancel('${o.id}')">Annuler la commande</button>`:''}<button class="sec" onclick="rc('${o.id}')">Reçu PDF</button></div></div>`}).join('')||'<p class="mut">Aucune commande.</p>'}
+function cancel(id){if(confirm('Annuler cette commande ?')){setOrder(id,{status:'annulée'});render()}}
+function rc(id){const d=D.get(),o=d.orders.find(o=>o.id==id);alert('Dans la fenêtre d\'impression, choisissez « Enregistrer au format PDF ».');printHTML(receipt(d.rests.find(r=>r.id==o.restId),o,'Reçu de commande'))}
+setInterval(()=>{const mine=D.get().orders.filter(o=>o.clientId==U.id),cu=Object.fromEntries(mine.map(o=>[o.id,o.status])),sig=JSON.stringify(mine.map(o=>[o.id,o.status,o.driverPos]));
+ if(seen){for(const k in cu)if(seen[k]!=cu[k])notify('Commande #'+k,cu[k]);if(tab=='myorders'&&sig!=seenSig)render()}seen=cu;seenSig=sig},2000);
+render();
+</script></body></html>
