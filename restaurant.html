@@ -1,0 +1,216 @@
+<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Restaurant</title><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#14213d"><link rel="apple-touch-icon" href="icon-192.png"><link rel="stylesheet" href="css/style.css"></head><body>
+<div id="hdr"></div><nav id="nav"></nav><main id="m"></main><div id="receipt"></div>
+<script src="js/app.js"></script><script>
+const U=guard('restaurant');let tab=null,cart=[],seen=null;
+const R=()=>D.get().rests.find(r=>r.id==U.restId);
+const upd=f=>{const d=D.get();f(d.rests.find(r=>r.id==U.restId),d);D.save(d)};
+const day=ts=>new Date(ts).toISOString().slice(0,10);
+const tabs=['dash','pos','orders','menu','hist','drivers','settings'];
+const tabMeta={
+ dash:{label:'Tableau de bord',ico:'⊞'},
+ pos:{label:'Caisse',ico:'🧮'},
+ orders:{label:'Commandes en ligne',ico:'🛒'},
+ menu:{label:'Menu',ico:'🍴'},
+ hist:{label:'Historique des ventes',ico:'🕐'},
+ drivers:{label:'Gestion des livreurs',ico:'🚚'},
+ settings:{label:'Paramètres et réglages',ico:'⚙️'}
+};
+function homeGrid(){const pend=D.get().orders.filter(o=>o.restId==U.restId&&o.status=='en attente').length;
+ const order=[ 'dash','pos','orders','menu','hist','drivers','settings'];
+ const btns=order.map(k=>{const m=tabMeta[k];const badge=(k=='orders'&&pend)?` <span class="badge">${pend}</span>`:'';
+  const cls=k==='settings'?'hg-btn full':'hg-btn';
+  return `<button class="${cls}" onclick="tab='${k}';render()"><span class="ico">${m.ico}</span><span>${m.label}${badge}</span></button>`}).join('');
+ return `<div class="home-grid-wrap"><div class="card"><h2 style="margin:0 0 14px;text-align:center">RestoGest</h2><div class="home-grid">${btns}</div></div></div>`}
+function proUI(r,s){
+ const e=s.end?new Date(s.end).toLocaleDateString():'';
+ // Formulaire de paiement reçu du propriétaire
+ if(r.proForm&&r.proForm.sentAt&&!(r.proPayment&&r.proPayment.status==='confirmed')&&!(s.state==='pro'&&s.ok)){
+  if(r.proPayment&&r.proPayment.status==='submitted'){
+   return `<div class="card warn"><b>⏳ Paiement envoyé — en attente de validation</b>
+    <p>Vous avez déclaré un paiement le ${new Date(r.proPayment.submittedAt).toLocaleString()}.<br>
+    Mode : <b>${esc(r.proPayment.methodName)}</b> · Réf. : <b>${esc(r.proPayment.reference)}</b></p>
+    <p class="mut">Le propriétaire vérifie la réception, puis active votre abonnement Pro.</p></div>`;
+  }
+  const f=r.proForm;
+  const opts=(f.methods||[]).map(m=>`<option value="${m.id}">${esc(m.name)}</option>`).join('');
+  const details=(f.methods||[]).map(m=>`<div class="mut" data-mid="${m.id}"><b>${esc(m.name)}</b> — ${esc(m.details||'Suivez les instructions du propriétaire')}</div>`).join('');
+  return `<div class="card col" style="border-inline-start:6px solid var(--gold)">
+   <h3 style="margin:0">💳 Formulaire de paiement Pro</h3>
+   <p>Montant : <b>${money(f.amount,f.currency)}</b> pour <b>${f.months} mois</b></p>
+   ${f.note?`<p class="mut">${esc(f.note)}</p>`:''}
+   <p class="mut">Choisissez un mode, effectuez le paiement, puis indiquez la référence de transaction.</p>
+   <div>${details||'<p class="mut">Aucun détail de paiement.</p>'}</div>
+   <label>Mode de paiement<select id="payMethod">${opts}</select></label>
+   <input id="payRef" placeholder="N° de transaction / référence de paiement">
+   <input id="payNote" placeholder="Note (optionnel)">
+   <button type="button" onclick="submitProPay()">Valider mon paiement</button>
+  </div>`;
+ }
+ if(s.state=='pro'&&s.ok)return `<div class="card okc"><b>Pro actif</b> : jusqu'au ${e} (${s.days} j)</div>`;
+ if(s.state=='trial'){
+  let extra='';
+  if(r.proRequest&&!(r.proForm&&r.proForm.sentAt)){
+   extra=`<p class="mut">Demande envoyée pour <b>${r.proPlanMonths||'?'} mois</b> — en attente du formulaire de paiement du propriétaire.</p>`;
+  } else if(!(r.proForm&&r.proForm.sentAt)){
+   extra=planPickerHtml(r);
+  }
+  return `<div class="card warn"><div>🎁 <b>Essai gratuit</b> : ${s.days} jour(s) restant(s), jusqu'au ${e}. Ensuite, l'option Pro est obligatoire.</div></div>${extra}`;
+ }
+ // expiré / off
+ if(r.proRequest&&!(r.proForm&&r.proForm.sentAt)){
+  return `<div class="card"><h3>🔒 ${esc(s.label)}</h3><p class="mut">Demande envoyée pour <b>${r.proPlanMonths||'?'} mois</b> — en attente du formulaire de paiement.</p></div>`;
+ }
+ if(!(r.proForm&&r.proForm.sentAt)){
+  return `<div class="card"><h3>🔒 ${esc(s.label)}</h3><p>Activez l'option Pro pour retrouver l'accès complet.</p></div>${planPickerHtml(r)}`;
+ }
+ return `<div class="card"><h3>🔒 ${esc(s.label)}</h3></div>`;
+}
+function banner(r,s){return proUI(r,s)}
+function render(){const r=R(),s=subInfo(r);
+ const title=tab&&tabMeta[tab]?tabMeta[tab].label:r.name;
+ hdr(title);nav.innerHTML='';
+ // Bouton retour dans l'en-tête quand on est dans une section
+ if(tab){
+  const lo=document.getElementById('lo');
+  if(lo){
+   const b=document.createElement('button');
+   b.id='btnBack';b.textContent='← Retour';b.className='';
+   b.style.cssText='background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.4);padding:6px 14px;box-shadow:none;margin-inline-end:6px';
+   b.onclick=()=>{tab=null;render()};
+   lo.parentNode.insertBefore(b,lo);
+  }
+ }
+ if(!s.ok){m.innerHTML=proUI(r,s)+passwordCard();return}
+ if(!tab){m.innerHTML=banner(r,s)+homeGrid();return}
+ const back=`<div class="back-row"><button type="button" class="back-btn" onclick="tab=null;render()">← Retour à l'accueil</button></div>`;
+ m.innerHTML=banner(r,s)+back+(V[tab])(r)}
+function getOwnerPlans(){
+ const d=D.get();const op=d.ownerPay||{};
+ const cur=op.defaultCurrency||'XOF';
+ const plans=op.plans||{1:10000,3:27000,6:50000,12:90000};
+ return {cur,plans};
+}
+function planPickerHtml(r){
+ const {cur,plans}=getOwnerPlans();
+ const opts=[1,3,6,12].map(m=>{
+  const price=plans[m]||0;
+  const checked=m===1?'checked':'';
+  return `<label class="card" style="margin:0;cursor:pointer;display:flex;gap:10px;align-items:center">
+   <input type="radio" name="proPlan" value="${m}" ${checked} style="width:18px;height:18px">
+   <span><b>${m} mois</b><br><span style="color:var(--acc);font-weight:800">${money(price,cur)}</span></span>
+  </label>`;
+ }).join('');
+ return `<div class="card col" style="border-inline-start:6px solid var(--gold)">
+  <h3 style="margin:0">⭐ Choisir mon abonnement Pro</h3>
+  <p class="mut">Sélectionnez la durée, puis envoyez la demande au propriétaire. Il vous enverra ensuite le formulaire de paiement.</p>
+  <div class="col" style="gap:8px">${opts}</div>
+  <button type="button" onclick="reqPro()">Envoyer ma demande d'abonnement</button>
+ </div>`;
+}
+function reqPro(){
+ const sel=document.querySelector('input[name="proPlan"]:checked');
+ const months=sel?+sel.value:1;
+ if(![1,3,6,12].includes(months))return alert('Choisissez une durée d\'abonnement (1, 3, 6 ou 12 mois).');
+ upd(r=>{r.proRequest=Date.now();r.proPlanMonths=months;r.proPayment=null;r.proForm=null});
+ toast('Demande Pro envoyée : '+months+' mois');render();
+}
+function submitProPay(){
+ const r=R();if(!r||!r.proForm)return;
+ const sel=document.getElementById('payMethod');
+ const ref=(document.getElementById('payRef')?.value||'').trim();
+ const note=(document.getElementById('payNote')?.value||'').trim();
+ if(!sel||!sel.value)return alert('Choisissez un mode de paiement.');
+ if(!ref)return alert('Indiquez le numéro de transaction ou la référence de paiement.');
+ const method=(r.proForm.methods||[]).find(m=>m.id===sel.value)||{id:sel.value,name:sel.options[sel.selectedIndex].text};
+ upd(x=>{x.proPayment={status:'submitted',methodId:method.id,methodName:method.name,reference:ref,note,submittedAt:Date.now()}});
+ toast('Paiement transmis au propriétaire');render();
+}
+const V={
+dash(r){const S=r.sales,c=r.currency,td=day(Date.now()),sum=a=>a.reduce((x,s)=>x+s.total,0);
+ const days=[...Array(7)].map((_,i)=>{const t=Date.now()-(6-i)*864e5;return{l:day(t).slice(5),v:sum(S.filter(s=>day(s.date)==day(t)))}});
+ const it={};S.forEach(s=>s.items.forEach(i=>it[i.n]=(it[i.n]||0)+i.p*i.q));
+ const top=Object.entries(it).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([l,v])=>({l:l.slice(0,8),v}));
+ return `<div class="col"><div class="card"><div class="mut">Chiffre d'affaires total</div><div class="kpi">${money(sum(S),c)}</div></div>
+ <div class="card"><div class="mut">Aujourd'hui</div><div class="kpi">${money(sum(S.filter(s=>day(s.date)==td)),c)}</div></div>
+ <div class="card"><div class="mut">Nombre de ventes</div><div class="kpi">${S.length}</div></div>
+ <div class="card"><div class="mut">Panier moyen</div><div class="kpi">${money(S.length?sum(S)/S.length:0,c)}</div></div>
+ <div class="card"><b>CA des 7 derniers jours</b>${barChart(days)}</div>
+ <div class="card"><b>Meilleurs produits</b>${top.length?barChart(top):'<p class="mut">Aucune vente pour l\'instant.</p>'}</div></div>`},
+pos(r){const tot=cart.reduce((a,i)=>a+i.p*i.q,0);
+ return `<div class="row" style="align-items:flex-start"><div class="g card"><div class="grid">${r.menu.map((p,i)=>`<button onclick="addC(${i})">${esc(p.n)}<br><b>${p.imgs&&p.imgs[0]?`<img src="${p.imgs[0]}" style="width:100%;height:70px;object-fit:cover;border-radius:8px"><br>`:''}${money(p.p,r.currency)}</b></button>`).join('')||'<p class="mut">Ajoutez des plats dans « Carte / Menu ».</p>'}</div></div>
+ <div class="card" style="min-width:260px"><b>Ticket</b> <span class="mut">(fonctionne hors connexion)</span><table>${cart.map((i,k)=>`<tr><td>${esc(i.n)} ×${i.q}</td><td>${money(i.p*i.q,r.currency)}</td><td><button class="sec" onclick="cart.splice(${k},1);render()">✕</button></td></tr>`).join('')}</table>
+ <p class="kpi">${money(tot,r.currency)}</p><select id="pm"><option>Espèces</option><option>Carte</option>${r.pay.map(p=>`<option>${esc(p)}</option>`).join('')}</select>
+ <button onclick="sell()" ${cart.length?'':'disabled'}>Valider la vente et imprimer</button></div></div>`},
+hist(r){return `<div class="card" style="overflow:auto"><table><tr><th>N°</th><th>Date</th><th>Source</th><th>Total</th><th></th></tr>${[...r.sales].reverse().map(s=>`<tr><td>${s.id}</td><td>${fdate(s.date)}</td><td>${s.src||'caisse'}</td><td>${money(s.total,r.currency)}</td><td><button class="sec" onclick="reprint('${s.id}')">Réimprimer</button></td></tr>`).join('')||'<tr><td class="mut">Aucune vente.</td></tr>'}</table></div>`},
+orders(r){const d=D.get(),os=d.orders.filter(o=>o.restId==r.id).reverse(),drv=d.users.filter(u=>u.restId==r.id&&u.role=='driver');
+ return os.map(o=>`<div class="card"><div class="row"><b>#${o.id}</b> <span class="badge" data-s="${o.status}">${o.status}</span> <span class="mut">${fdate(o.created)} — ${esc(o.clientName)} ${esc(o.clientPhone)}</span></div>
+ <div>${o.items.map(i=>`${esc(i.n)} ×${i.q}`).join(', ')} — <b>${money(o.total,r.currency)}</b> (${esc(o.pay)})</div>
+ <div class="mut">${esc(o.addr)}</div>
+ ${o.cLat!=null&&o.cLng!=null?`<div class="row"><span class="mut">📍 GPS client : ${o.cLat.toFixed(5)}, ${o.cLng.toFixed(5)}</span> <a target="_blank" rel="noopener" href="https://www.google.com/maps?q=${o.cLat},${o.cLng}" style="font-weight:700">Ouvrir dans Google Maps</a></div>`:'<div class="mut">Position GPS non fournie</div>'}
+ ${o.status=='annulée'?'<p style="color:var(--bad)">Annulée par le client</p>':''}
+ <div class="row">${o.status=='en attente'?`<button onclick="so('${o.id}','acceptée')">Accepter</button><button class="bad" onclick="so('${o.id}','refusée')">Refuser</button>`:''}
+ ${o.status=='acceptée'?`<button onclick="so('${o.id}','préparée')">Marquer préparée</button>`:''}
+ ${['acceptée','préparée'].includes(o.status)?`<select id="dv${o.id}"><option value="">Livreur…</option>${drv.map(u=>`<option value="${u.id}" ${o.driverId==u.id?'selected':''}>${esc(u.name)}</option>`).join('')}</select><button class="sec" onclick="setOrder('${o.id}',{driverId:document.getElementById('dv${o.id}').value});render()">Attribuer</button>`:''}</div></div>`).join('')||'<p class="mut">Aucune commande en ligne.</p>'},
+menu(r){return `<div class="card col"><b>Nouveau plat</b><div class="row"><input id="pn" placeholder="Nom du plat" class="g"><input id="pp" type="number" step="any" placeholder="Prix"></div>
+ <textarea id="pd" rows="3" placeholder="Ingrédients et description"></textarea>
+ <label class="mut">Photos du plat (une ou plusieurs)<br><input id="pf" type="file" accept="image/*" multiple></label><button onclick="addP()">Ajouter</button></div>
+ <h3>Catalogue des plats</h3>`+(r.menu.length?`<div class="cat">${r.menu.map((p,i)=>`<div class="card dish">${gal(p.imgs,i)}<b>${esc(p.n)}</b> — <b style="color:var(--acc)">${money(p.p,r.currency)}</b><p class="mut">${esc(p.desc||'')}</p>
+ <div class="row"><label class="lb">Ajouter des photos<input type="file" accept="image/*" multiple hidden onchange="addImgs(${i},this.files)"></label><button class="sec" onclick="editD(${i})">Modifier</button><button class="bad" onclick="upd(r=>r.menu.splice(${i},1));render()">Supprimer</button></div></div>`).join('')}</div>`:'<p class="mut">Aucun plat dans le catalogue.</p>')},
+drivers(r){const dv=D.get().users.filter(u=>u.restId==r.id&&u.role=='driver');
+ return `<div class="card row"><input id="dn" placeholder="Nom" class="g"><input id="dp" placeholder="Téléphone"><input id="dw" type="password" placeholder="Mot de passe"><input id="dw2" type="password" placeholder="Confirmez le mot de passe"><button onclick="addD()">Créer le compte livreur</button></div>
+ <div class="card"><table>${dv.map(u=>`<tr><td>${esc(u.name)}</td><td>${esc(u.phone)}</td></tr>`).join('')||'<tr><td class="mut">Aucun livreur.</td></tr>'}</table></div>`},
+settings(r){return `<div class="card col"><label>Nom<input id="sn" value="${esc(r.name)}" style="width:100%"></label>
+ <div class="row">${r.logo?`<img src="${r.logo}" class="logo">`:''}<label>Logo <input type="file" id="sl" accept="image/*"></label></div>
+ <label>Téléphone<input id="sp" value="${esc(r.phone)}" style="width:100%"></label><label>Adresse<input id="sa" value="${esc(r.address)}" style="width:100%"></label>
+ <div class="card" style="margin:0;padding:12px;${r.lat!=null?'background:rgba(18,163,107,.1);border-inline-start:4px solid var(--ok)':'background:rgba(255,183,3,.12);border-inline-start:4px solid var(--gold)'}">
+  <b>📍 Position exacte du restaurant (Google Maps)</b>
+  <p class="mut" id="restPosMsg">${r.lat!=null?'Position enregistrée : '+Number(r.lat).toFixed(5)+', '+Number(r.lng).toFixed(5):'Aucune position enregistrée. Détectez-la pour apparaître aux clients les plus proches.'}</p>
+  <div class="row"><input id="la" placeholder="Latitude" value="${r.lat??''}"><input id="ln" placeholder="Longitude" value="${r.lng??''}"></div>
+  <div class="row" style="margin-top:8px">
+    <button type="button" class="sec" onclick="geo()">📍 Détecter automatiquement ma position</button>
+    ${r.lat!=null?`<a target="_blank" rel="noopener" href="https://www.google.com/maps?q=${r.lat},${r.lng}">Voir sur Google Maps</a>`:''}
+  </div>
+ </div>
+ <label>Devise<select id="sc">${curOptions(r.currency)}</select></label>
+ <label>Moyens de paiement en ligne (séparés par des virgules)<input id="sm" value="${esc(r.pay.join(', '))}" placeholder="Carte, Mobile Money" style="width:100%"></label>
+ <button onclick="saveS()">Enregistrer</button></div>
+ <div class="card"><b>Carte de visite</b><p><a href="${cardUrl(r.slug)}" target="_blank">Ouvrir la carte de visite de ${esc(r.name)}</a></p></div>
+ ${passwordCard()}`}};
+function addC(i){const p=R().menu[i],x=cart.find(c=>c.n==p.n);x?x.q++:cart.push({n:p.n,p:p.p,q:1});render()}
+function sell(){const r=R(),s={id:uid(),date:Date.now(),items:cart,total:cart.reduce((a,i)=>a+i.p*i.q,0),pay:pm.value,src:'caisse'};
+ upd(r=>r.sales.push(s));cart=[];printHTML(receipt(r,s));render()}
+function reprint(id){const r=R();printHTML(receipt(r,r.sales.find(s=>s.id==id)))}
+function so(id,st){setOrder(id,{status:st});render()}
+async function addP(){const n=pn.value.trim(),p=pp.value,d=pd.value.trim();if(!n||!p)return;const imgs=await Promise.all([...pf.files].map(readImg));upd(r=>r.menu.push({n,p:+p,desc:d,imgs}));render()}
+async function addImgs(i,fs){const imgs=await Promise.all([...fs].map(readImg));upd(r=>{r.menu[i].imgs=(r.menu[i].imgs||[]).concat(imgs)});render()}
+function delImg(i,k){upd(r=>r.menu[i].imgs.splice(k,1));render()}
+function editD(i){const v=prompt('Ingrédients et description',R().menu[i].desc||'');if(v!==null){upd(r=>r.menu[i].desc=v.trim());render()}}
+function addD(){const d=D.get();if(!dn.value||!dp.value||!dw.value)return;if(dw.value!=dw2.value)return alert('Les deux mots de passe ne sont pas identiques.');if(d.users.some(u=>u.phone==dp.value))return alert('Numéro déjà utilisé');d.users.push({id:uid(),role:'driver',restId:U.restId,name:dn.value,phone:dp.value,pass:dw.value});D.save(d);render()}
+function geo(){
+ if(!navigator.geolocation)return alert('Géolocalisation indisponible.');
+ const msg=document.getElementById('restPosMsg');
+ if(msg)msg.textContent='Recherche GPS en cours…';
+ navigator.geolocation.getCurrentPosition(
+  p=>{
+   const lat=p.coords.latitude,lng=p.coords.longitude,acc=Math.round(p.coords.accuracy);
+   if(document.getElementById('la')){la.value=lat;ln.value=lng}
+   upd(r=>{r.lat=lat;r.lng=lng;r.locationAccuracy=acc;r.locationCapturedAt=Date.now()});
+   toast('Position du restaurant enregistrée');
+   render();
+  },
+  ()=>{if(msg)msg.textContent='Position non obtenue. Activez le GPS et autorisez la localisation.';alert('Impossible de détecter la position. Activez le GPS du téléphone.');},
+  {enableHighAccuracy:true,timeout:20000,maximumAge:0}
+ )}
+function saveS(){const f=sl.files[0],go=logo=>{upd(r=>{r.name=sn.value;r.phone=sp.value;r.address=sa.value;r.currency=sc.value;r.pay=sm.value.split(',').map(s=>s.trim()).filter(Boolean);r.lat=la.value?+la.value:null;r.lng=ln.value?+ln.value:null;if(logo)r.logo=logo});render()};
+ if(f){const fr=new FileReader();fr.onload=()=>go(fr.result);fr.readAsDataURL(f)}else go()}
+let pendN=-1;
+setInterval(()=>{const r=R();if(!r)return;const os=D.get().orders.filter(o=>o.restId==U.restId),cur=Object.fromEntries(os.map(o=>[o.id,o.status])),pend=os.filter(o=>o.status=='en attente').length;
+ if(seen){os.forEach(o=>{if(!(o.id in seen))notify('Nouvelle commande #'+o.id,o.clientName+' — '+money(o.total,r.currency));else if(seen[o.id]!=o.status&&o.status=='annulée')notify('Commande #'+o.id+' annulée par le client',o.clientName)});
+  if(JSON.stringify(seen)!=JSON.stringify(cur)){if(tab=='orders'&&subInfo(r).ok)render();else if(pend!=pendN && !tab)render()}}
+ pendN=pend;seen=cur},2000);
+// Si le restaurant n'a pas encore de position, proposer la détection une fois
+setTimeout(()=>{const r=R();if(r&&(r.lat==null||r.lng==null)&&!window._askedRestGeo){window._askedRestGeo=1;
+ if(confirm('Votre restaurant n\'a pas encore de position GPS.\n\nDétecter maintenant pour apparaître aux clients les plus proches ?'))geo();
+}},800);
+render();
+</script></body></html>
