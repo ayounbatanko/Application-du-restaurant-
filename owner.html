@@ -1,0 +1,160 @@
+<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Propriétaire</title><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#14213d"><link rel="apple-touch-icon" href="icon-192.png"><link rel="stylesheet" href="css/style.css"></head><body>
+<div id="hdr"></div><main id="m"></main>
+<script src="js/app.js"></script><script>
+guard('owner');hdr('Espace propriétaire — '+me().name);let reqN=-1,lastSig='',view='home';
+function ensurePay(){const d=D.get();if(!d.ownerPay)d.ownerPay={methods:[],defaultCurrency:'XOF',plans:{1:10000,3:27000,6:50000,12:90000}};
+ if(!d.ownerPay.plans)d.ownerPay.plans={1:d.ownerPay.defaultAmount||10000,3:(d.ownerPay.defaultAmount||10000)*3,6:(d.ownerPay.defaultAmount||10000)*6,12:(d.ownerPay.defaultAmount||10000)*12};
+ return d}
+function savePay(f){const d=ensurePay();f(d.ownerPay);D.save(d);lastSig='';render(true)}
+function addMethod(){const n=document.getElementById('pmName').value.trim(),det=document.getElementById('pmDet').value.trim();
+ if(!n)return alert('Indiquez le nom du mode de paiement (ex. Orange Money, Wave, Virement).');
+ savePay(p=>{p.methods.push({id:uid(),name:n,details:det})});toast('Mode de paiement ajouté')}
+function delMethod(id){if(!confirm('Supprimer ce mode de paiement ?'))return;savePay(p=>{p.methods=p.methods.filter(m=>m.id!=id)})}
+function saveDefaults(){const c=document.getElementById('defCur').value;
+ const plans={};
+ [1,3,6,12].forEach(m=>{plans[m]=+(document.getElementById('plan_'+m)?.value)||0});
+ if(Object.values(plans).some(v=>!v||v<=0))return alert('Indiquez un tarif valide pour chaque durée.');
+ savePay(p=>{p.plans=plans;p.defaultCurrency=c||'XOF';p.defaultAmount=plans[1]});toast('Tarifs Pro enregistrés')}
+function proStage(r){
+ if(r.sub==='active'&&r.subEnd>Date.now())return 'active';
+ if(r.proPayment&&r.proPayment.status==='submitted')return 'payment_submitted';
+ if(r.proForm&&r.proForm.sentAt)return 'form_sent';
+ if(r.proRequest)return 'requested';
+ return 'none';
+}
+function stageLabel(st){return({none:'—',requested:'Demande reçue',form_sent:'Formulaire envoyé',payment_submitted:'Paiement à vérifier',active:'Pro actif'})[st]||st}
+function sendForm(id){
+ const d=ensurePay(),r=d.rests.find(x=>x.id==id);if(!r)return;
+ if(!d.ownerPay.methods.length)return alert('Ajoutez d\'abord au moins un mode de paiement ci-dessous.');
+ const months=+(r.proPlanMonths||document.getElementById('mo_'+id)?.value||1);
+ const amount=+(document.getElementById('amt_'+id)?.value|| (d.ownerPay.plans&&d.ownerPay.plans[months]) || d.ownerPay.defaultAmount || 10000);
+ const note=(document.getElementById('note_'+id)?.value||'').trim();
+ r.proForm={
+  sentAt:Date.now(),
+  amount,
+  currency:d.ownerPay.defaultCurrency||'XOF',
+  months:months||1,
+  note,
+  methods:d.ownerPay.methods.map(m=>({id:m.id,name:m.name,details:m.details}))
+ };
+ r.proRequest=r.proRequest||Date.now();
+ r.proPayment=null;
+ D.save(d);lastSig='';toast('Formulaire de paiement envoyé à '+r.name);render(true);
+}
+function confirmPay(id){
+ const d=D.get(),r=d.rests.find(x=>x.id==id);if(!r||!r.proPayment)return;
+ if(!confirm('Confirmez-vous avoir reçu le paiement de '+r.name+' ?\\nLe compte Pro sera activé.'))return;
+ const months=(r.proForm&&r.proForm.months)||1;
+ r.sub='active';
+ r.subEnd=Math.max(Date.now(),r.subEnd||0)+months*30*864e5;
+ r.proRequest=0;
+ r.proPayment={...r.proPayment,status:'confirmed',confirmedAt:Date.now()};
+ // garder proForm pour historique léger
+ D.save(d);lastSig='';toast('Pro activé pour '+r.name+' jusqu\'au '+new Date(r.subEnd).toLocaleDateString());render(true);
+}
+function rejectPay(id){
+ const d=D.get(),r=d.rests.find(x=>x.id==id);if(!r)return;
+ if(!confirm('Rejeter ce paiement ? Le restaurant devra renvoyer le formulaire.'))return;
+ r.proPayment=null;
+ // reform available
+ D.save(d);lastSig='';toast('Paiement rejeté — le restaurant peut renvoyer');render(true);
+}
+function act(id,a){const d=D.get(),r=d.rests.find(r=>r.id==id);
+ if(a=='stop')r.sub='suspended';
+ if(a=='del'){if(!confirm('Supprimer ce restaurant et toutes ses données ?'))return;d.rests=d.rests.filter(x=>x.id!=id);d.users=d.users.filter(u=>u.restId!=id);d.orders=d.orders.filter(o=>o.restId!=id)}
+ D.save(d);lastSig='';render(true)}
+function dataSig(){const d=ensurePay();return JSON.stringify({
+ n:d.rests.length,c:d.users.filter(u=>u.role=='client').length,o:d.orders.length,pay:d.ownerPay,
+ r:d.rests.map(r=>({id:r.id,name:r.name,phone:r.phone,sub:r.sub,subEnd:r.subEnd,pro:r.proRequest,plan:r.proPlanMonths,form:r.proForm,payment:r.proPayment,cur:r.currency,slug:r.slug}))
+})}
+function render(force){
+ const sig=dataSig();
+ if(!force && sig===lastSig)return;
+ lastSig=sig;
+ const y=window.scrollY||document.documentElement.scrollTop||0;
+ const d=ensurePay();
+ const pending=d.rests.filter(r=>proStage(r)==='requested'||proStage(r)==='payment_submitted');
+ const nPay=d.rests.filter(r=>proStage(r)==='payment_submitted').length;
+ const nReq=d.rests.filter(r=>proStage(r)==='requested').length;
+ if(reqN>=0&&(nReq+nPay)>reqN)notify('Abonnement Pro','Nouvelle activité Pro (demande ou paiement)');
+ reqN=nReq+nPay;
+
+ const payCfg=`<div class="card col">
+  <h3 style="margin:0">💳 Modes de paiement Pro</h3>
+  <p class="mut">Ces modes seront proposés aux restaurants dans le formulaire de paiement.</p>
+  ${(d.ownerPay.methods||[]).map(m=>`<div class="row"><div class="g"><b>${esc(m.name)}</b><div class="mut">${esc(m.details||'')}</div></div><button class="bad sec" onclick="delMethod('${m.id}')">Supprimer</button></div>`).join('')||'<p class="mut">Aucun mode pour l\'instant (Orange Money, Wave, Moov, virement…).</p>'}
+  <div class="row"><input id="pmName" class="g" placeholder="Nom (ex. Orange Money)"><input id="pmDet" class="g" placeholder="Détails (n°, IBAN, instructions)"></div>
+  <button type="button" onclick="addMethod()">Ajouter un mode de paiement</button>
+  <hr style="border:0;border-top:1px solid var(--bd);width:100%">
+  <b>Tarifs Pro par durée</b>
+  <p class="mut">Le restaurant choisit 1, 3, 6 ou 12 mois avant d'envoyer sa demande.</p>
+  <select id="defCur">${curOptions(d.ownerPay.defaultCurrency||'XOF')}</select>
+  <div class="row"><label class="g">1 mois<input id="plan_1" type="number" value="${(d.ownerPay.plans&&d.ownerPay.plans[1])||10000}"></label>
+  <label class="g">3 mois<input id="plan_3" type="number" value="${(d.ownerPay.plans&&d.ownerPay.plans[3])||27000}"></label></div>
+  <div class="row"><label class="g">6 mois<input id="plan_6" type="number" value="${(d.ownerPay.plans&&d.ownerPay.plans[6])||50000}"></label>
+  <label class="g">12 mois<input id="plan_12" type="number" value="${(d.ownerPay.plans&&d.ownerPay.plans[12])||90000}"></label></div>
+  <button type="button" class="sec" onclick="saveDefaults()">Enregistrer les tarifs</button>
+ </div>`;
+
+ const cards=d.rests.map(r=>{
+  const s=subInfo(r),st=proStage(r);
+  let actions='';
+  if(st==='requested'){
+   const chosenMo=r.proPlanMonths||1;
+   const suggested=(d.ownerPay.plans&&d.ownerPay.plans[chosenMo])||d.ownerPay.defaultAmount||10000;
+   actions=`<div class="card" style="margin:8px 0;background:rgba(255,183,3,.1)">
+    <b>📩 Demande d'abonnement Pro reçue</b>
+    <p>Durée choisie par le restaurant : <b>${chosenMo} mois</b></p>
+    <p class="mut">Envoyez le formulaire de paiement correspondant.</p>
+    <div class="row">
+     <input id="amt_${r.id}" type="number" value="${suggested}" placeholder="Montant" style="max-width:140px">
+     <input id="mo_${r.id}" type="hidden" value="${chosenMo}">
+     <input id="note_${r.id}" class="g" placeholder="Note (optionnel)">
+    </div>
+    <button onclick="sendForm('${r.id}')">Envoyer le formulaire de paiement (${chosenMo} mois)</button>
+   </div>`;
+  } else if(st==='form_sent'){
+   actions=`<p class="mut">Formulaire envoyé le ${new Date(r.proForm.sentAt).toLocaleString()} — en attente du paiement du restaurant (${money(r.proForm.amount,r.proForm.currency)} / ${r.proForm.months} mois).</p>`;
+  } else if(st==='payment_submitted'){
+   const p=r.proPayment;
+   actions=`<div class="card" style="margin:8px 0;background:rgba(18,163,107,.1);border-inline-start:4px solid var(--ok)">
+    <b>✅ Paiement déclaré par le restaurant</b>
+    <p>Mode : <b>${esc(p.methodName)}</b><br>
+    Référence / n° transaction : <b>${esc(p.reference)}</b><br>
+    Montant attendu : <b>${money((r.proForm&&r.proForm.amount)||0,(r.proForm&&r.proForm.currency)||r.currency)}</b><br>
+    ${p.note?('Note : '+esc(p.note)+'<br>'):''}
+    Envoyé le ${new Date(p.submittedAt).toLocaleString()}</p>
+    <p class="mut">Vérifiez sur votre compte de paiement, puis validez.</p>
+    <div class="row">
+     <button onclick="confirmPay('${r.id}')">Paiement reçu — Activer Pro</button>
+     <button class="bad sec" onclick="rejectPay('${r.id}')">Paiement non reçu</button>
+    </div>
+   </div>`;
+  }
+  return `<div class="card">
+   <div class="row"><b>${esc(r.name)}</b> <span class="badge" data-s="${s.state}">${s.label}</span>
+    <span class="badge">${stageLabel(st)}</span>
+    <span class="mut">${esc(r.phone)} · ${r.currency}</span>
+   </div>
+   <div class="mut">Lien : <a href="${cardUrl(r.slug)}" target="_blank">${r.slug}</a>
+    ${s.end?' · Échéance : '+new Date(s.end).toLocaleDateString()+(s.days>=0?' ('+s.days+' j)':''):''}</div>
+   ${actions}
+   <div class="row" style="margin-top:8px">
+    ${st==='form_sent'?`<button class="sec" onclick="sendForm('${r.id}')">Renvoyer le formulaire</button>`:''}
+    <button class="sec" onclick="act('${r.id}','stop')">Désactiver le compte</button>
+    <button class="bad" onclick="act('${r.id}','del')">Supprimer</button>
+   </div>
+  </div>`;
+ }).join('')||'<p class="mut">Aucun restaurant inscrit pour l\'instant.</p>';
+
+ m.innerHTML=`<div class="card"><div class="kpi">${d.rests.length}</div><div class="mut">restaurants partenaires — ${d.users.filter(u=>u.role=='client').length} clients — ${d.orders.length} commandes en ligne</div>
+  ${pending.length?`<p><b>${pending.length}</b> dossier(s) Pro en cours (demande ou paiement à vérifier).</p>`:''}</div>
+ ${payCfg}
+ <h3>Restaurants & abonnements Pro</h3>
+ ${cards}
+ ${passwordCard()}`;
+ requestAnimationFrame(()=>{window.scrollTo(0,y)});
+}
+render(true);
+setInterval(()=>render(false),3000);
+</script></body></html>
