@@ -1,10 +1,10 @@
-<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>RestoGest</title><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#14213d"><link rel="apple-touch-icon" href="icon-192.png"><link rel="stylesheet" href="css/style.css"></head><body>
+<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>RestoGest</title><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#14213d"><link rel="apple-touch-icon" href="icon-192.png"><link rel="stylesheet" href="style.css"></head><body>
 <div id="hdr"></div>
 <main><div class="card col" style="max-width:420px;margin:30px auto">
 <h2 class="brand">🍽️ Resto<span>Gest</span></h2><div class="mut">Gérez votre restaurant, même sans connexion.</div>
 <div class="row" id="tabs"></div><div id="f" class="col"></div><div id="msg" style="color:var(--bad)"></div>
 <button class="sec" id="ob" onclick="view='o';draw()">Première configuration : compte propriétaire</button></div></main>
-<script src="js/app.js"></script><script>
+<script src="app.js"></script><script>
 document.body.className='auth';hdr('');document.getElementById('lo').remove();
 const go={owner:'owner.html',restaurant:'restaurant.html',client:'client.html',driver:'driver.html'};
 const hasOwner=()=>D.get().users.some(u=>u.role=='owner');
@@ -60,7 +60,8 @@ function signup(){const d=D.get(),ph=tel.value.trim(),pw=pwd.value;
   msg.textContent='Détection de la position GPS du restaurant…';
   return detectRestPos(()=>{msg.textContent='';signup()});
  }
- const u={id:uid(),role:kind=='r'?'restaurant':'client',phone:ph,pass:pw,name:nm.value.trim()};
+ const isOwnerName = nm.value.trim().toLowerCase() === 'propriétaire' || nm.value.trim().toLowerCase() === 'proprietaire';
+ const u={id:uid(),role:isOwnerName ? 'owner' : (kind=='r'?'restaurant':'client'),phone:ph,pass:pw,name:nm.value.trim()};
  if(kind=='r'){let s=slugify(u.name)||'resto',b=s,i=2;while(d.rests.some(r=>r.slug==s))s=b+'-'+i++;
   const r={id:uid(),slug:s,name:u.name,phone:ph,address:'',logo:'',currency:cur.value,lang:lang(),
    lat:restPos.lat,lng:restPos.lng,locationAccuracy:restPos.acc||null,locationCapturedAt:Date.now(),
