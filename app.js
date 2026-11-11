@@ -1,105 +1,76 @@
-
-// --- GESTION DE RESTAURANT - LOGIQUE INTÉGRÉE ---
-
-window.addEventListener('load', () => {
-  // Splash Screen & PWA Banner
-  checkPWAInstallBanner();
-  checkForAppUpdates();
-});
-
-// 2) Bannière PWA d'installation sur navigateur
-let deferredPrompt;
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-  showInstallBanner();
-});
-
-function showInstallBanner() {
-  if (!document.getElementById('pwa-install-banner') && !window.matchMedia('(display-mode: standalone)').matches) {
-    const banner = document.createElement('div');
-    banner.id = 'pwa-install-banner';
-    banner.style.cssText = 'background:linear-gradient(135deg, #f59e0b, #d97706); color:#fff; padding:10px 15px; display:flex; justify-content:space-between; align-items:center; font-weight:bold; position:sticky; top:0; z-index:1000;';
-    banner.innerHTML = `<span>📱 Installer "Gestion de Restaurant"</span><button onclick="installPWA()" style="background:#fff; color:#d97706; border:none; padding:5px 10px; border-radius:5px; font-weight:bold; cursor:pointer;">Installer</button>`;
-    document.body.prepend(banner);
-  }
+let SH=window;try{if(window.parent!==window&&window.parent.nav)SH=window.parent}catch(e){}
+SH.__m=SH.__m||{l:{},s:{}};
+const store={g(w,k){try{const v=(w=='l'?localStorage:sessionStorage).getItem(k);if(v!==null)return v}catch(e){}return SH.__m[w][k]??null},
+ s(w,k,v){try{(w=='l'?localStorage:sessionStorage).setItem(k,v)}catch(e){}SH.__m[w][k]=v},clr(){try{sessionStorage.clear()}catch(e){}SH.__m.s={}}};
+const K='rm_db',LANGS={fr:'Français',en:'English',ar:'العربية',es:'Español'};
+const TL={dash:'Tableau de bord',pos:'Caisse',hist:'Historique des ventes',orders:'Commandes',menu:'Carte / Menu',drivers:'Livreurs',settings:'Réglages',restos:'Restaurants',myorders:'Mes commandes',logout:'Déconnexion'};
+const T={en:{dash:'Dashboard',pos:'Cash register',hist:'Sales history',orders:'Orders',menu:'Menu',drivers:'Drivers',settings:'Settings',restos:'Restaurants',myorders:'My orders',logout:'Log out'},
+es:{dash:'Panel',pos:'Caja',hist:'Historial de ventas',orders:'Pedidos',menu:'Menú',drivers:'Repartidores',settings:'Ajustes',restos:'Restaurantes',myorders:'Mis pedidos',logout:'Salir'},
+ar:{dash:'لوحة القيادة',pos:'الصندوق',hist:'سجل المبيعات',orders:'الطلبات',menu:'القائمة',drivers:'السائقون',settings:'الإعدادات',restos:'المطاعم',myorders:'طلباتي',logout:'خروج'}};
+const lang=()=>store.g('l','lang')||'fr',t=k=>(T[lang()]||{})[k]||TL[k]||k;
+const TRS="Tableau de bord|Dashboard|Panel|لوحة القيادة\nCaisse|Cash register|Caja|الصندوق\nHistorique des ventes|Sales history|Historial de ventas|سجل المبيعات\nCommandes|Orders|Pedidos|الطلبات\nCarte / Menu|Menu|Menú|القائمة\nLivreurs|Drivers|Repartidores|السائقون\nRéglages|Settings|Ajustes|الإعدادات\nRestaurants|Restaurants|Restaurantes|المطاعم\nMes commandes|My orders|Mis pedidos|طلباتي\nDéconnexion|Log out|Salir|خروج\n● En ligne|● Online|● En línea|● متصل\n● Hors ligne — caisse active|● Offline — register active|● Sin conexión — caja activa|● غير متصل — الصندوق يعمل\nGérez votre restaurant, même sans connexion.|Manage your restaurant, even offline.|Gestiona tu restaurante, incluso sin conexión.|أدر مطعمك حتى بدون اتصال.\nSe connecter|Log in|Iniciar sesión|تسجيل الدخول\nCréer un compte|Create an account|Crear una cuenta|إنشاء حساب\nPremière configuration : compte propriétaire|First setup: owner account|Primera configuración: cuenta de propietario|الإعداد الأول: حساب المالك\nClient|Customer|Cliente|زبون\nRestaurant|Restaurant|Restaurante|مطعم\nCréer le compte|Create account|Crear cuenta|إنشاء الحساب\nCréer le compte propriétaire|Create owner account|Crear cuenta de propietario|إنشاء حساب المالك\nRetour|Back|Volver|رجوع\n← Retour|← Back|← Volver|→ رجوع\nNuméro de téléphone ou nom d'utilisateur|Phone number or username|Número de teléfono o nombre de usuario|رقم الهاتف أو اسم المستخدم\nMot de passe|Password|Contraseña|كلمة المرور\nConfirmez le mot de passe|Confirm password|Confirma la contraseña|أكّد كلمة المرور\nVotre nom|Your name|Tu nombre|اسمك\nNom du restaurant|Restaurant name|Nombre del restaurante|اسم المطعم\nNuméro de téléphone|Phone number|Número de teléfono|رقم الهاتف\nVotre nom de propriétaire|Your owner name|Tu nombre de propietario|اسم المالك\nCréez votre compte propriétaire (une seule fois).|Create your owner account (one time only).|Crea tu cuenta de propietario (una sola vez).|أنشئ حساب المالك (مرة واحدة فقط).\nIdentifiants incorrects.|Incorrect credentials.|Credenciales incorrectas.|بيانات الدخول غير صحيحة.\nTous les champs sont obligatoires.|All fields are required.|Todos los campos son obligatorios.|جميع الحقول مطلوبة.\nLes deux mots de passe ne sont pas identiques.|The two passwords do not match.|Las dos contraseñas no coinciden.|كلمتا المرور غير متطابقتين.\nCe numéro est déjà utilisé.|This number is already used.|Este número ya está en uso.|هذا الرقم مستخدم بالفعل.\nNom et mot de passe obligatoires.|Name and password required.|Nombre y contraseña obligatorios.|الاسم وكلمة المرور مطلوبان.\nDevise par défaut : FCFA (XOF). 1 mois d'essai gratuit.|Default currency: FCFA (XOF). 1 month free trial.|Moneda por defecto: FCFA (XOF). 1 mes de prueba gratuita.|العملة الافتراضية: فرنك CFA (XOF). شهر تجريبي مجاني.\nEspace propriétaire|Owner area|Área del propietario|مساحة المالك\nLien|Link|Enlace|الرابط\nTél.|Phone|Tel.|الهاتف\nStatut|Status|Estado|الحالة\nÉchéance|Due date|Vencimiento|الاستحقاق\nDevise|Currency|Moneda|العملة\nEssai gratuit|Free trial|Prueba gratuita|تجربة مجانية\nAbonné|Subscribed|Suscrito|مشترك\nSuspendu|Suspended|Suspendido|موقوف\nExpiré|Expired|Vencido|منتهي\nEssai terminé|Trial ended|Prueba terminada|انتهت التجربة\n+1 mois payé|+1 month paid|+1 mes pagado|+شهر مدفوع\nSuspendre|Suspend|Suspender|إيقاف\nSupprimer|Delete|Eliminar|حذف\nAucun restaurant inscrit pour l'instant.|No restaurant registered yet.|Ningún restaurante registrado todavía.|لا يوجد مطعم مسجل بعد.\nChiffre d'affaires total|Total revenue|Ingresos totales|إجمالي رقم الأعمال\nAujourd'hui|Today|Hoy|اليوم\nNombre de ventes|Number of sales|Número de ventas|عدد المبيعات\nPanier moyen|Average basket|Cesta media|متوسط السلة\nCA des 7 derniers jours|Revenue, last 7 days|Ingresos, últimos 7 días|رقم الأعمال خلال 7 أيام\nMeilleurs produits|Top products|Mejores productos|أفضل المنتجات\nAucune vente pour l'instant.|No sales yet.|Aún no hay ventas.|لا توجد مبيعات بعد.\nTicket|Receipt|Ticket|التذكرة\n(fonctionne hors connexion)|(works offline)|(funciona sin conexión)|(يعمل بدون اتصال)\nValider la vente et imprimer|Confirm sale and print|Validar venta e imprimir|تأكيد البيع والطباعة\nEspèces|Cash|Efectivo|نقدًا\nCarte|Card|Tarjeta|بطاقة\nAucune vente.|No sales.|Sin ventas.|لا توجد مبيعات.\nN°|No.|N.º|الرقم\nDate|Date|Fecha|التاريخ\nSource|Source|Origen|المصدر\nTotal|Total|Total|المجموع\nRéimprimer|Reprint|Reimprimir|إعادة الطباعة\ncaisse|register|caja|الصندوق\nen ligne|online|en línea|عبر الإنترنت\nAccepter|Accept|Aceptar|قبول\nRefuser|Decline|Rechazar|رفض\nMarquer préparée|Mark as prepared|Marcar como preparado|تحديد كمُجهّز\nLivreur…|Driver…|Repartidor…|السائق…\nAttribuer|Assign|Asignar|تعيين\nAnnulée par le client|Cancelled by the customer|Cancelado por el cliente|ألغاها الزبون\nAucune commande en ligne.|No online orders.|Sin pedidos en línea.|لا توجد طلبات عبر الإنترنت.\nNom du plat|Dish name|Nombre del plato|اسم الطبق\nPrix|Price|Precio|السعر\nAjouter|Add|Añadir|إضافة\nNom|Name|Nombre|الاسم\nTéléphone|Phone|Teléfono|الهاتف\nCréer le compte livreur|Create driver account|Crear cuenta de repartidor|إنشاء حساب سائق\nAucun livreur.|No drivers.|Sin repartidores.|لا يوجد سائقون.\nLogo|Logo|Logo|الشعار\nAdresse|Address|Dirección|العنوان\nLatitude|Latitude|Latitud|خط العرض\nLongitude|Longitude|Longitud|خط الطول\nMa position|My location|Mi ubicación|موقعي\nMoyens de paiement en ligne (séparés par des virgules)|Online payment methods (comma-separated)|Medios de pago en línea (separados por comas)|وسائل الدفع عبر الإنترنت (مفصولة بفواصل)\nEnregistrer|Save|Guardar|حفظ\nCarte de visite|Business card|Tarjeta de visita|بطاقة العمل\nImprimer|Print|Imprimir|طباعة\nRestaurant introuvable.|Restaurant not found.|Restaurante no encontrado.|المطعم غير موجود.\nActivez la localisation pour trier les restaurants par distance.|Enable location to sort restaurants by distance.|Activa la ubicación para ordenar por distancia.|فعّل الموقع لترتيب المطاعم حسب المسافة.\nVoir la carte|View menu|Ver la carta|عرض القائمة\nAucun restaurant disponible pour le moment.|No restaurant available right now.|Ningún restaurante disponible por ahora.|لا يوجد مطعم متاح حاليًا.\nAdresse de livraison|Delivery address|Dirección de entrega|عنوان التوصيل\nPaiement à la livraison|Pay on delivery|Pago contra entrega|الدفع عند التسليم\nCommander|Order|Pedir|اطلب\nAnnuler la commande|Cancel order|Cancelar pedido|إلغاء الطلب\nReçu PDF|PDF receipt|Recibo PDF|إيصال PDF\nAucune commande.|No orders.|Sin pedidos.|لا توجد طلبات.\nLivreur|Driver|Repartidor|السائق\nDémarrer la livraison|Start delivery|Iniciar entrega|بدء التوصيل\nLivraison terminée|Delivery completed|Entrega completada|اكتمل التوصيل\nEn préparation…|Being prepared…|En preparación…|قيد التحضير…\nAucune commande attribuée.|No assigned orders.|Sin pedidos asignados.|لا توجد طلبات معيّنة.\nen attente|pending|pendiente|قيد الانتظار\nacceptée|accepted|aceptado|مقبول\npréparée|prepared|preparado|مجهّز\nen route|on the way|en camino|في الطريق\nterminée|completed|completado|مكتمل\nrefusée|declined|rechazado|مرفوض\nannulée|cancelled|cancelado|ملغى\nCréer un compte pour votre restaurant|Create an account for your restaurant|Crea una cuenta para tu restaurante|أنشئ حسابًا لمطعمك\nCatalogue des plats|Dish catalogue|Catálogo de platos|كتالوج الأطباق\nNouveau plat|New dish|Nuevo plato|طبق جديد\nIngrédients et description|Ingredients and description|Ingredientes y descripción|المكونات والوصف\nPhotos du plat (une ou plusieurs)|Dish photos (one or more)|Fotos del plato (una o varias)|صور الطبق (واحدة أو أكثر)\nAjouter des photos|Add photos|Añadir fotos|إضافة صور\nModifier|Edit|Editar|تعديل\nAucun plat dans le catalogue.|No dishes in the catalogue.|Ningún plato en el catálogo.|لا توجد أطباق في الكتالوج.\nActiver Pro (+1 mois)|Activate Pro (+1 month)|Activar Pro (+1 mes)|تفعيل برو (+شهر)\nDésactiver le compte|Deactivate account|Desactivar la cuenta|تعطيل الحساب\nCompte désactivé|Account deactivated|Cuenta desactivada|الحساب معطّل\nPro actif|Pro active|Pro activo|برو مفعّل\nPro expiré|Pro expired|Pro vencido|انتهى برو\nDemande Pro|Pro request|Solicitud Pro|طلب برو\nActiver l'option Pro|Activate the Pro option|Activar la opción Pro|تفعيل خيار برو\nDemander l'activation Pro|Request Pro activation|Solicitar activación Pro|طلب تفعيل برو\nOption Pro|Pro option|Opción Pro|خيار برو\nVoir toute la carte|View full menu|Ver toda la carta|عرض القائمة كاملة\nRestaurants les plus proches de vous|Restaurants closest to you|Restaurantes más cercanos|أقرب المطاعم إليك\nMes tâches de livraison|My delivery tasks|Mis entregas|مهام التوصيل\nLivraisons terminées|Completed deliveries|Entregas completadas|التوصيلات المكتملة\nAucune tâche pour le moment.|No tasks right now.|Sin tareas por ahora.|لا توجد مهام حاليًا.\nCatalogue bientôt disponible.|Catalogue coming soon.|Catálogo próximamente.|الكتالوج قريبًا.";
+const TR={};TRS.split('\n').forEach(l=>{const[a,...r]=l.split('|');['en','es','ar'].forEach((k,i)=>{(TR[k]=TR[k]||{})[a]=r[i]})});
+function trs(s){const L=TR[lang()];if(!L)return s;const m=s.match(/^(\s*)([\s\S]*?)(\s*)$/),c=m[2];if(L[c])return m[1]+L[c]+m[3];const i=c.search(/ [:—] /);if(i>0&&L[c.slice(0,i)])return m[1]+L[c.slice(0,i)]+c.slice(i)+m[3];return s}
+function trDom(root){if(lang()=='fr')return;const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;while(n=w.nextNode()){if(n.parentNode.tagName=='SCRIPT')continue;const v=trs(n.nodeValue);if(v!==n.nodeValue)n.nodeValue=v}
+ root.querySelectorAll('[placeholder]').forEach(e=>{const v=trs(e.getAttribute('placeholder'));if(v!==e.getAttribute('placeholder'))e.setAttribute('placeholder',v)})}
+let _obs=null;function startTr(){if(_obs||lang()=='fr')return;const o=()=>_obs.observe(document.body,{childList:true,subtree:true,characterData:true});_obs=new MutationObserver(()=>{_obs.disconnect();trDom(document.body);o()});o();trDom(document.body)}
+const D={get(){let d=JSON.parse(store.g('l',K)||'null');if(!d){d={users:[],rests:[],orders:[]};store.s('l',K,JSON.stringify(d))}return d},save(d){store.s('l',K,JSON.stringify(d))}};
+const uid=()=>Math.random().toString(36).slice(2,9);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const me=()=>{const i=store.g('s','uid');return i&&D.get().users.find(u=>u.id==i)};
+const inShell=SH!==window;
+const navTo=u=>inShell?parent.nav(u):(location=u.replace(/\.html$/,'')+'.html');
+const cardUrl=s=>inShell?'#card/'+s:'card.html?r='+s;
+const cardSlug=()=>inShell?SH.location.hash.split('/')[1]:new URLSearchParams(location.search).get('r');
+function guard(role){const u=me();if(!u||u.role!==role){navTo('index');return null}return u}
+function logout(){store.clr();navTo('index')}
+function changeMyPassword(oldId,newId,cfId){
+  const oldEl=document.getElementById(oldId||'oldpw'),nwEl=document.getElementById(newId||'newpw'),cfEl=document.getElementById(cfId||'cfpw');
+  if(!oldEl||!nwEl||!cfEl)return;
+  const old=oldEl.value,nw=nwEl.value,cf=cfEl.value;
+  const u=me();if(!u)return alert('Session expirée. Reconnectez-vous.');
+  if(u.pass!==old)return alert('Mot de passe actuel incorrect.');
+  if(nw.length<6)return alert('Le nouveau mot de passe doit contenir au moins 6 caractères.');
+  if(nw!==cf)return alert('Les deux nouveaux mots de passe ne correspondent pas.');
+  if(nw===old)return alert('Choisissez un mot de passe différent de l\'actuel.');
+  const d=D.get(),uu=d.users.find(x=>x.id===u.id);if(!uu)return alert('Compte introuvable.');
+  uu.pass=nw;D.save(d);
+  // garder la session cohérente
+  oldEl.value=nwEl.value=cfEl.value='';
+  toast('Mot de passe modifié avec succès.');
+}
+function passwordCard(){
+  return `<div class="card col"><h3 style="margin:0">🔐 Changer mon mot de passe</h3>
+  <p class="mut">Vous pouvez modifier votre mot de passe à tout moment.</p>
+  <input id="oldpw" type="password" placeholder="Mot de passe actuel" autocomplete="current-password">
+  <input id="newpw" type="password" placeholder="Nouveau mot de passe (6 caractères minimum)" autocomplete="new-password">
+  <input id="cfpw" type="password" placeholder="Confirmer le nouveau mot de passe" autocomplete="new-password">
+  <button type="button" onclick="changeMyPassword()">Enregistrer le nouveau mot de passe</button></div>`;
 }
 
-function installPWA() {
-  if (deferredPrompt) {
-    deferredPrompt.prompt();
-    deferredPrompt.userChoice.then((choiceResult) => {
-      deferredPrompt = null;
-      document.getElementById('pwa-install-banner')?.remove();
-    });
-  }
-}
+const slugify=s=>s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+const money=(v,c)=>{if(!c||c=='XOF'||c=='XAF')return new Intl.NumberFormat(lang(),{maximumFractionDigits:0}).format(v)+' FCFA';try{return new Intl.NumberFormat(lang(),{style:'currency',currency:c||'XOF'}).format(v)}catch(e){return v+' '+c}};
+const currencies=()=>Intl.supportedValuesOf?Intl.supportedValuesOf('currency'):['EUR','USD','XOF','MAD','DZD','TND','GBP'];
+const fdate=ts=>new Date(ts).toLocaleString(lang());
+const km=(a,b)=>{const R=6371,r=x=>x*Math.PI/180,dl=r(b[0]-a[0]),dn=r(b[1]-a[1]);const h=Math.sin(dl/2)**2+Math.cos(r(a[0]))*Math.cos(r(b[0]))*Math.sin(dn/2)**2;return 2*R*Math.asin(Math.sqrt(h))};
+function setLang(k){store.s('l','lang',k);inShell?parent.nav(parent.cur):location.reload()}
+function hdr(title){document.getElementById('hdr').innerHTML=`<b>${esc(title)}</b><span class="row"><span id="net"></span><span class="lang">${Object.entries(LANGS).map(([k,v])=>`<button title="${v}" class="${k==lang()?'on':''}" onclick="setLang('${k}')">${k.toUpperCase()}</button>`).join('')}</span><button id="lo" onclick="logout()">${t('logout')}</button></span>`;document.documentElement.dir=lang()=='ar'?'rtl':'ltr';const nt=()=>{const e=document.getElementById('net');if(e){e.textContent=navigator.onLine?'● En ligne':'● Hors ligne — caisse active';e.className=navigator.onLine?'':'off'}};nt();addEventListener('online',nt);addEventListener('offline',nt);startTr()}
+function toast(m){const e=document.createElement('div');e.className='toast';e.textContent=m;document.body.appendChild(e);setTimeout(()=>e.remove(),4500);try{const c=new AudioContext(),o=c.createOscillator();o.connect(c.destination);o.frequency.value=880;o.start();setTimeout(()=>o.stop(),180)}catch(e){}}
+function setOrder(id,patch){const d=D.get(),o=d.orders.find(o=>o.id==id);Object.assign(o,patch);
+ if(patch.status=='terminée'){d.rests.find(r=>r.id==o.restId).sales.push({id:uid(),date:Date.now(),items:o.items,total:o.total,src:'en ligne'})}D.save(d)}
+function receipt(r,x,title){const items=x.items.map(i=>`<tr><td>${esc(i.n)} ×${i.q}</td><td style="text-align:end">${money(i.p*i.q,r.currency)}</td></tr>`).join('');
+ return `<div style="text-align:center">${r.logo?`<img src="${r.logo}" style="width:60px"><br>`:''}<b>${esc(r.name)}</b><br>${esc(r.address||'')}<br>${esc(r.phone||'')}<hr>${title||'Reçu'} #${esc(x.id)}<br>${fdate(x.date||x.created)}</div><table>${items}</table><hr><b>TOTAL : ${money(x.total,r.currency)}</b><br>${esc(x.pay||'')}<p style="text-align:center">Merci !</p>`}
+function printHTML(h){document.getElementById('receipt').innerHTML=h;setTimeout(()=>window.print(),150)}
+function barChart(data,cur){const m=Math.max(1,...data.map(d=>d.v)),w=300/data.length;
+ return `<svg viewBox="0 0 300 140" width="100%">${data.map((d,i)=>{const h=d.v/m*90;return `<rect x="${i*w+6}" y="${110-h}" width="${w-12}" height="${h}" fill="var(--acc)" rx="3"/><text x="${i*w+w/2}" y="${105-h}" font-size="7" text-anchor="middle" fill="currentColor">${Math.round(d.v)}</text><text x="${i*w+w/2}" y="124" font-size="7" text-anchor="middle" fill="currentColor">${esc(d.l)}</text>`}).join('')}</svg>`}
 
-// 2) Notification de mise à jour
-function checkForAppUpdates() {
-  const currentVersion = "1.6.0";
-  const savedVersion = localStorage.getItem('app_version');
-  if (savedVersion && savedVersion !== currentVersion) {
-    showUpdateNotification();
-  } else {
-    localStorage.setItem('app_version', currentVersion);
-  }
-}
+const curOptions=sel=>['XOF',...currencies().filter(c=>c!='XOF')].map(c=>`<option value="${c}" ${c==(sel||'XOF')?'selected':''}>${c=='XOF'?'FCFA (XOF)':c=='XAF'?'FCFA (XAF)':c}</option>`).join('');
+const readImg=f=>new Promise(res=>{const fr=new FileReader();fr.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,640/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',.72))};im.onerror=()=>res(fr.result);im.src=fr.result};fr.readAsDataURL(f)});
+const gal=(imgs,i)=>imgs&&imgs.length?'<div class="gal">'+imgs.map((s,k)=>`<span class="gi"><img src="${s}" alt="">${i!=null?`<button class="x" onclick="delImg(${i},${k})">✕</button>`:''}</span>`).join('')+'</div>':'<div class="gal ph">🍽️</div>';
 
-function showUpdateNotification() {
-  const note = document.createElement('div');
-  note.style.cssText = 'position:fixed; bottom:20px; right:20px; background:#1e293b; color:#fff; padding:15px; border-radius:10px; border:1px solid #f59e0b; z-index:1000;';
-  note.innerHTML = `<h4>🚀 Mise à jour disponible !</h4><button onclick="window.location.reload()" style="background:#10b981; color:#fff; border:none; padding:6px 12px; border-radius:5px; font-weight:bold; cursor:pointer;">Mettre à jour</button>`;
-  document.body.appendChild(note);
-}
-
-// 4 & 5) Persistance & Inscription sécurisée (Question: Quel est votre nom ?)
-function registerUserWithSecurity(userData) {
-  if (!userData.securityName || userData.securityName.trim() === "") {
-    alert("La réponse à la question 'Quel est votre nom ?' est obligatoire pour valider la création de votre compte.");
-    return false;
-  }
-  let users = JSON.parse(localStorage.getItem('restogest_users') || '[]');
-  if(users.some(u => u.phone === userData.phone)) {
-    alert("Ce numéro de téléphone est déjà enregistré.");
-    return false;
-  }
-  users.push(userData);
-  localStorage.setItem('restogest_users', JSON.stringify(users));
-  return true;
-}
-
-// 5) Récupération de mot de passe par le nom
-function recoverPassword(phone, securityName) {
-  let users = JSON.parse(localStorage.getItem('restogest_users') || '[]');
-  let user = users.find(u => u.phone === phone);
-  if (!user) {
-    alert("Utilisateur introuvable.");
-    return;
-  }
-  if (user.securityName.trim().toLowerCase() === securityName.trim().toLowerCase()) {
-    alert(`Mot de passe récupéré avec succès : ${user.password}`);
-  } else {
-    alert("Nom incorrect. Impossible de récupérer le mot de passe.");
-  }
-}
-
-// 1) Recherche propriétaire par téléphone ou ID pro
-function ownerSearchUsers(query) {
-  let users = JSON.parse(localStorage.getItem('restogest_users') || '[]');
-  if (!query) return users;
-  return users.filter(u => 
-    u.phone.includes(query) || (u.proSubId && u.proSubId.toLowerCase().includes(query.toLowerCase())) || (u.securityName && u.securityName.toLowerCase().includes(query.toLowerCase()))
-  );
-}
-
-// 3) Chat de support
-function saveChatMessage(msg) {
-  let messages = JSON.parse(localStorage.getItem('restogest_chat') || '[]');
-  messages.push(msg);
-  localStorage.setItem('restogest_chat', JSON.stringify(messages));
-}
-
-function getChatMessages() {
-  return JSON.parse(localStorage.getItem('restogest_chat') || '[]');
-}
+function subInfo(r){const n=Date.now(),dl=e=>Math.max(0,Math.ceil((e-n)/864e5));
+ if(r.sub=='suspended')return{ok:false,state:'off',label:'Compte désactivé',end:r.subEnd||r.trialEnd,days:-1};
+ if(r.sub=='active')return r.subEnd>n?{ok:true,state:'pro',label:'Pro actif',end:r.subEnd,days:dl(r.subEnd)}:{ok:false,state:'off',label:'Pro expiré',end:r.subEnd,days:-1};
+ return r.trialEnd>n?{ok:true,state:'trial',label:'Essai gratuit',end:r.trialEnd,days:dl(r.trialEnd)}:{ok:false,state:'off',label:'Essai terminé',end:r.trialEnd,days:-1}}
+function notify(t,b){toast(t+(b?' — '+b:''));try{if(window.Notification&&Notification.permission=='granted')new Notification(t,{body:b||''})}catch(e){}}
+document.addEventListener('click',()=>{try{window.Notification&&Notification.permission=='default'&&Notification.requestPermission()}catch(e){}},{once:true});
