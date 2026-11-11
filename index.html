@@ -1,0 +1,70 @@
+<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>RestoGest</title><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#14213d"><link rel="apple-touch-icon" href="icon-192.png"><link rel="stylesheet" href="css/style.css"></head><body>
+<div id="hdr"></div>
+<main><div class="card col" style="max-width:420px;margin:30px auto">
+<h2 class="brand">🍽️ Resto<span>Gest</span></h2><div class="mut">Gérez votre restaurant, même sans connexion.</div>
+<div class="row" id="tabs"></div><div id="f" class="col"></div><div id="msg" style="color:var(--bad)"></div>
+<button class="sec" id="ob" onclick="view='o';draw()">Première configuration : compte propriétaire</button></div></main>
+<script src="js/app.js"></script><script>
+document.body.className='auth';hdr('');document.getElementById('lo').remove();
+const go={owner:'owner.html',restaurant:'restaurant.html',client:'client.html',driver:'driver.html'};
+const hasOwner=()=>D.get().users.some(u=>u.role=='owner');
+let view='l',kind='c';
+const cls=on=>on?'':'sec';
+function draw(){msg.textContent='';ob.style.display=hasOwner()||view=='o'?'none':'';
+ tabs.innerHTML=`<button class="${cls(view=='l')}" onclick="view='l';draw()">Se connecter</button><button class="${cls(view=='s')}" onclick="view='s';draw()">Créer un compte</button>`;
+ const pw=`<input id="pwd" type="password" placeholder="Mot de passe"><input id="pw2" type="password" placeholder="Confirmez le mot de passe">`;
+ if(view=='l')f.innerHTML=`<input id="tel" placeholder="Numéro de téléphone ou nom d'utilisateur"><input id="pwd" type="password" placeholder="Mot de passe"><button onclick="login()">Se connecter</button>`;
+ else if(view=='o')f.innerHTML=`<p class="mut">Créez votre compte propriétaire (une seule fois).</p><input id="nm" placeholder="Votre nom de propriétaire">${pw}<button onclick="owner()">Créer le compte propriétaire</button><button class="sec" onclick="view='l';draw()">Retour</button>`;
+ else f.innerHTML=`<div class="row"><button class="${cls(kind=='c')}" onclick="kind='c';restPos=null;draw()">Client</button><button class="${cls(kind=='r')}" onclick="kind='r';restPos=null;draw()">Créer un compte pour votre restaurant</button></div>
+  <input id="nm" placeholder="${kind=='r'?'Nom du restaurant':'Votre nom'}"><input id="tel" placeholder="Numéro de téléphone">${pw}
+  ${kind=='r'?`<select id="cur">${curOptions('XOF')}</select>
+  <div class="mut">Devise par défaut : FCFA (XOF). 1 mois d'essai gratuit.</div>
+  <div id="restGpsBox" class="card" style="margin:0;padding:12px;background:rgba(255,183,3,.12);border-inline-start:4px solid var(--gold)">
+    <b>📍 Position du restaurant</b>
+    <p class="mut" id="restGpsMsg" style="margin:6px 0">Obligatoire : votre position GPS exacte sera détectée pour que les clients voient les restaurants les plus proches.</p>
+    <button type="button" class="sec" onclick="detectRestPos()">Détecter ma position maintenant</button>
+    <div id="restGpsLink"></div>
+  </div>`:''}
+  <button onclick="signup()">Créer le compte</button>`}
+let restPos=null;
+function detectRestPos(done){
+  if(!navigator.geolocation){alert('Géolocalisation indisponible sur cet appareil.');return}
+  const msg=document.getElementById('restGpsMsg');
+  if(msg)msg.textContent='Recherche de la position GPS…';
+  navigator.geolocation.getCurrentPosition(
+    p=>{
+      restPos={lat:p.coords.latitude,lng:p.coords.longitude,acc:Math.round(p.coords.accuracy)};
+      if(msg)msg.textContent='✅ Position détectée : '+restPos.lat.toFixed(5)+', '+restPos.lng.toFixed(5)+(restPos.acc?' (±'+restPos.acc+' m)':'');
+      const link=document.getElementById('restGpsLink');
+      if(link)link.innerHTML='<a target="_blank" rel="noopener" href="https://www.google.com/maps?q='+restPos.lat+','+restPos.lng+'">Vérifier sur Google Maps</a>';
+      const box=document.getElementById('restGpsBox');
+      if(box){box.style.background='rgba(18,163,107,.12)';box.style.borderInlineStartColor='var(--ok)'}
+      if(typeof done==='function')done();
+    },
+    e=>{
+      if(msg)msg.textContent='❌ Position non obtenue. Activez le GPS et autorisez la localisation, puis réessayez.';
+      alert('Impossible de détecter la position du restaurant.\nActivez le GPS et autorisez la localisation pour ce site.');
+    },
+    {enableHighAccuracy:true,timeout:20000,maximumAge:0}
+  );
+}
+function login(){const d=D.get(),id=tel.value.trim(),u=d.users.find(u=>(u.phone==id||u.name==id)&&u.pass==pwd.value);if(!u)return msg.textContent='Identifiants incorrects.';store.s('s','uid',u.id);navTo(go[u.role])}
+function owner(){const d=D.get();if(hasOwner())return;if(!nm.value.trim()||!pwd.value)return msg.textContent='Nom et mot de passe obligatoires.';if(pwd.value!=pw2.value)return msg.textContent='Les deux mots de passe ne sont pas identiques.';
+ const u={id:uid(),role:'owner',phone:nm.value.trim(),pass:pwd.value,name:nm.value.trim()};d.users.push(u);D.save(d);store.s('s','uid',u.id);navTo('owner.html')}
+function signup(){const d=D.get(),ph=tel.value.trim(),pw=pwd.value;
+ if(!ph||!pw||!nm.value.trim())return msg.textContent='Tous les champs sont obligatoires.';
+ if(pw!=pw2.value)return msg.textContent='Les deux mots de passe ne sont pas identiques.';
+ if(d.users.some(u=>u.phone==ph))return msg.textContent='Ce numéro est déjà utilisé.';
+ // Restaurant : position GPS obligatoire
+ if(kind=='r'&&!restPos){
+  msg.textContent='Détection de la position GPS du restaurant…';
+  return detectRestPos(()=>{msg.textContent='';signup()});
+ }
+ const u={id:uid(),role:kind=='r'?'restaurant':'client',phone:ph,pass:pw,name:nm.value.trim()};
+ if(kind=='r'){let s=slugify(u.name)||'resto',b=s,i=2;while(d.rests.some(r=>r.slug==s))s=b+'-'+i++;
+  const r={id:uid(),slug:s,name:u.name,phone:ph,address:'',logo:'',currency:cur.value,lang:lang(),
+   lat:restPos.lat,lng:restPos.lng,locationAccuracy:restPos.acc||null,locationCapturedAt:Date.now(),
+   sub:'trial',trialEnd:Date.now()+30*864e5,subEnd:0,pay:[],menu:[],sales:[]};d.rests.push(r);u.restId=r.id}
+ d.users.push(u);D.save(d);store.s('s','uid',u.id);navTo(go[u.role])}
+if(me())navTo(go[me().role]);else draw();
+</script></body></html>
