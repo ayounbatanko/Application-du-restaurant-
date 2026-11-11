@@ -1,6 +1,6 @@
-<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Propriétaire</title><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#14213d"><link rel="apple-touch-icon" href="icon-192.png"><link rel="stylesheet" href="css/style.css"></head><body>
+<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Propriétaire</title><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#14213d"><link rel="apple-touch-icon" href="icon-192.png"><link rel="stylesheet" href="style.css"></head><body>
 <div id="hdr"></div><main id="m"></main>
-<script src="js/app.js"></script><script>
+<script src="app.js"></script><script>
 guard('owner');hdr('Espace propriétaire — '+me().name);let reqN=-1,lastSig='',view='home';
 function ensurePay(){const d=D.get();if(!d.ownerPay)d.ownerPay={methods:[],defaultCurrency:'XOF',plans:{1:10000,3:27000,6:50000,12:90000}};
  if(!d.ownerPay.plans)d.ownerPay.plans={1:d.ownerPay.defaultAmount||10000,3:(d.ownerPay.defaultAmount||10000)*3,6:(d.ownerPay.defaultAmount||10000)*6,12:(d.ownerPay.defaultAmount||10000)*12};
