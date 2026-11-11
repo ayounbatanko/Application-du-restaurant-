@@ -1,7 +1,7 @@
-<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Carte de visite</title><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#14213d"><link rel="apple-touch-icon" href="icon-192.png"><link rel="stylesheet" href="css/style.css"></head><body>
+<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Carte de visite</title><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#14213d"><link rel="apple-touch-icon" href="icon-192.png"><link rel="stylesheet" href="style.css"></head><body>
 <main><div id="c"></div><div class="row" style="justify-content:center"><button onclick="print()">Imprimer</button><button class="sec" onclick="navTo('index')">Retour</button></div></main>
 <div id="receipt"></div>
-<script src="js/app.js"></script><script>
+<script src="app.js"></script><script>
 const r=D.get().rests.find(r=>r.slug==cardSlug());
 c.innerHTML=r?`<div class="bizcard pcard">${r.logo?`<img src="${r.logo}" class="logo" style="width:90px;height:90px">`:''}<h2>${esc(r.name)}</h2><p>${esc(r.address||'')}</p><p>☎ ${esc(r.phone||'')}</p><p class="mut">${esc(r.slug)}</p></div>`:'<p class="card">Restaurant introuvable.</p>';
 if(r)document.title=r.name;
