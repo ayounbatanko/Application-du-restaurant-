@@ -66,6 +66,8 @@ textarea{width:100%;font:inherit}
 <main><div id="c"></div><div class="row" style="justify-content:center"><button onclick="print()">Imprimer</button><button class="sec" onclick="navTo('index')">Retour</button></div></main>
 <div id="receipt"></div>
 <script src="db.js"></script>
+<script src="charts.js"></script>
+<script src="qr.js"></script>
 <script>let SH=window;try{if(window.parent!==window&&window.parent.nav)SH=window.parent}catch(e){}
 SH.__m=SH.__m||{l:{},s:{}};
 const store={g(w,k){try{const v=(w=='l'?localStorage:sessionStorage).getItem(k);if(v!==null)return v}catch(e){}return SH.__m[w][k]??null},
@@ -122,46 +124,34 @@ function notify(t,b){toast(t+(b?' — '+b:''));try{if(window.Notification&&Notif
 document.addEventListener('click',()=>{try{window.Notification&&Notification.permission=='default'&&Notification.requestPermission()}catch(e){}},{once:true});
 </script><script>
 const r=D.get().rests.find(r=>r.slug==cardSlug());
-c.innerHTML=r?`<div class="bizcard pcard">${r.logo?`<img src="${r.logo}" class="logo" style="width:90px;height:90px">`:''}<h2>${esc(r.name)}</h2><p>${esc(r.address||'')}</p><p>☎ ${esc(r.phone||'')}</p><p class="mut">${esc(r.slug)}</p></div>`:'<p class="card">Restaurant introuvable.</p>';
+c.innerHTML=r?`<div class="bizcard pcard">${r.logo?`<img src="${r.logo}" class="logo" style="width:90px;height:90px">`:''}<h2>${esc(r.name)}</h2><p>${esc(r.address||'')}</p><p>☎ ${esc(r.phone||'')}</p><p class="mut">${esc(r.slug)}</p><div id="qrbox" style="text-align:center;margin-top:10px">${RGQR.svg(new URL('index.html?resto='+r.slug,location.href).href,190)}<p><b>📱 Scannez pour commander en ligne</b></p></div></div><button type="button" onclick="printCard()" style="margin-top:10px">🖨️ Imprimer la carte</button>`:'<p class="card">Restaurant introuvable.</p>';
 if(r)document.title=r.name;
+function printCard(){const u=new URL('index.html?resto='+r.slug,location.href).href;printDoc('<!doctype html><html><head><meta charset="utf-8"><title>'+esc(r.name)+'</title></head><body style="margin:0;font-family:system-ui,Arial,sans-serif"><div style="width:90mm;margin:15mm auto;border:2px solid #14213d;border-radius:14px;padding:14px;text-align:center"><h2 style="margin:0 0 4px;color:#14213d">'+esc(r.name)+'</h2><div>'+esc(r.address||'')+'</div><div>☎ '+esc(r.phone||'')+'</div>'+RGQR.svg(u,200)+'<div style="font-weight:700">Scannez pour commander en ligne</div></div></body></html>')}
 </script>
 <script>
 (()=> {
- const BASE='./', KEY='restogest_seen_version';
- let deferredInstall=null;
- const banner=document.createElement('div');
- banner.id='rg-update-banner';
- banner.style.cssText='display:none;position:fixed;left:12px;right:12px;bottom:14px;z-index:99999;background:#14213d;color:white;padding:14px 16px;border-radius:16px;box-shadow:0 8px 30px #0005;font:14px/1.45 system-ui';
- banner.innerHTML='<div style="font-weight:700;margin-bottom:5px" id="rg-update-title">Mise à jour disponible</div><div id="rg-update-msg" style="opacity:.9;margin-bottom:10px"></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button id="rg-update-now" style="background:#ffb703;color:#14213d;border:0;border-radius:9px;padding:10px 14px;font-weight:700">Mettre à jour</button><button id="rg-install" style="background:#fff;color:#14213d;border:0;border-radius:9px;padding:10px 14px;font-weight:700">Installer l’application</button><button id="rg-update-close" style="background:transparent;color:#fff;border:1px solid #ffffff66;border-radius:9px;padding:10px 12px">Plus tard</button></div>';
- document.addEventListener('DOMContentLoaded',()=>{
-   document.body.appendChild(banner);
-   const install=document.getElementById('rg-install');
-   install.addEventListener('click',async()=>{
-     if(deferredInstall){deferredInstall.prompt();await deferredInstall.userChoice;deferredInstall=null;install.style.display='none'}
-     else alert('Pour installer : ouvrez le menu ⋮ de votre navigateur puis choisissez « Installer l’application » ou « Ajouter à l’écran d’accueil ».');
-   });
-   document.getElementById('rg-update-close').onclick=()=>banner.style.display='none';
-   document.getElementById('rg-update-now').onclick=async()=>{
-     try{if(navigator.serviceWorker){const reg=await navigator.serviceWorker.getRegistration();if(reg)await reg.update();if(reg&&reg.waiting)reg.waiting.postMessage({type:'SKIP_WAITING'})}}catch(e){}
-     location.reload(true);
-   };
- });
- addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;const b=document.getElementById('rg-install');if(b)b.style.display='inline-block';showBanner('Installer RestoGest','Installez l’application sur votre téléphone pour y accéder rapidement.')});
- addEventListener('appinstalled',()=>{deferredInstall=null;const b=document.getElementById('rg-install');if(b)b.style.display='none'});
- function showBanner(title,message){const t=document.getElementById('rg-update-title'),m=document.getElementById('rg-update-msg');if(t)t.textContent=title;if(m)m.textContent=message||'';if(banner)banner.style.display='block'}
+ const KEY='restogest_seen_version';let pending='';
+ const bar=document.createElement('div');bar.id='rg-update-banner';
+ bar.style.cssText='display:none;position:fixed;top:0;left:0;right:0;z-index:99999;align-items:center;gap:10px;background:#14213d;color:#fff;padding:10px 12px;padding-top:calc(10px + env(safe-area-inset-top,0px));box-shadow:0 6px 22px #0006;font:14px/1.35 system-ui';
+ bar.innerHTML='<span id="rg-update-msg" style="flex:1"></span><button id="rg-update-now" style="background:#ffb703;color:#14213d;border:0;border-radius:10px;padding:10px 14px;font-weight:800;white-space:nowrap">🔄 Mise à jour</button>';
+ (document.body||document.documentElement).appendChild(bar);
+ document.getElementById('rg-update-now').onclick=async()=>{
+   if(pending)try{localStorage.setItem(KEY,pending)}catch(e){}
+   try{if(navigator.serviceWorker){const reg=await navigator.serviceWorker.getRegistration();if(reg)await reg.update();if(reg&&reg.waiting)reg.waiting.postMessage({type:'SKIP_WAITING'})}}catch(e){}
+   location.reload();
+ };
  async function checkVersion(){
    try{
     const r=await fetch('./version.json?ts='+Date.now(),{cache:'no-store'});if(!r.ok)return;
     const data=await r.json();if(!data.version)return;
     const seen=localStorage.getItem(KEY);
-    if(!seen){localStorage.setItem(KEY,data.version);return}
-    if(seen!==String(data.version)){showBanner('Nouvelle version RestoGest disponible',data.message||'Une mise à jour est disponible. Appuyez sur « Mettre à jour ».');}
+    if(!seen){localStorage.setItem(KEY,String(data.version));return}
+    if(data.notify===true&&seen!==String(data.version)){pending=String(data.version);document.getElementById('rg-update-msg').textContent=data.message||'Une nouvelle version est disponible.';bar.style.display='flex'}
+    else bar.style.display='none';
    }catch(e){}
  }
  checkVersion();setInterval(checkVersion,5*60*1000);
- if('serviceWorker' in navigator && location.protocol.startsWith('http')){
-   navigator.serviceWorker.register('./sw.js').catch(()=>{});
- }
+ if('serviceWorker' in navigator && location.protocol.startsWith('http')){navigator.serviceWorker.register('./sw.js').catch(()=>{})}
 })();
 </script>
 </body></html>

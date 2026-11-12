@@ -1,16 +1,4 @@
-<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Gestion Multiples de Restaurant</title>
-<meta name="description" content="Gérez plusieurs restaurants, les commandes en ligne, les livraisons et le chiffre d'affaires depuis une seule application.">
-<meta name="theme-color" content="#14213d">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="GMR Restaurant">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
-<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
-<style>:root{--bg:#f4f5f9;--card:#fff;--ink:#16213e;--mut:#6a7390;--bd:#e3e6ef;--navy:#14213d;--navy2:#26417a;--gold:#ffb703;--gold2:#fb8500;--ok:#12a36b;--bad:#e5383b;--acc:#fb8500;--kpi:#26417a;--sh:0 6px 22px rgba(20,33,61,.08)}
+<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Gestion Multiples de Restaurant</title><script src="splash.js"></script><style>:root{--bg:#f4f5f9;--card:#fff;--ink:#16213e;--mut:#6a7390;--bd:#e3e6ef;--navy:#14213d;--navy2:#26417a;--gold:#ffb703;--gold2:#fb8500;--ok:#12a36b;--bad:#e5383b;--acc:#fb8500;--kpi:#26417a;--sh:0 6px 22px rgba(20,33,61,.08)}
 @media(prefers-color-scheme:dark){:root{--bg:#0d1325;--card:#161f38;--ink:#eef1fb;--mut:#93a0c4;--bd:#27345a;--kpi:#ffc93c;--sh:0 6px 22px rgba(0,0,0,.35)}}
 *{box-sizing:border-box}
 body{margin:0;font:15px/1.55 "Segoe UI",system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--ink)}
@@ -63,10 +51,6 @@ body.auth{background:radial-gradient(circle at 15% 0,#2f5aa8 0,#14213d 55%) fixe
 body.auth #hdr{background:transparent;box-shadow:none;position:static}
 body.auth main{padding-top:0}body.auth .card{box-shadow:0 24px 70px rgba(0,0,0,.45);border:0;border-radius:22px;padding:26px}
 .brand{font-size:26px;font-weight:800;margin:0}.brand span{color:var(--gold2)}
-.splash-brand{text-align:center;margin-bottom:8px}
-.splash-logo{font-size:48px;line-height:1;margin-bottom:8px;filter:drop-shadow(0 4px 12px rgba(255,183,3,.4))}
-.brand-title{font-size:22px;font-weight:800;margin:0 0 6px;line-height:1.25;letter-spacing:-.3px;background:linear-gradient(135deg,#ffb703,#fb8500);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.brand-sub{font-size:13px;margin:0 0 4px}
 body.auth #hdr>b{display:none}body.auth #hdr{justify-content:flex-end}
 nav{position:static;flex-wrap:nowrap;scrollbar-width:thin}#hdr{position:static}
 .gal{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;margin-bottom:10px}.gal.ph{height:90px;align-items:center;justify-content:center;font-size:34px;background:rgba(255,183,3,.15);border-radius:12px}
@@ -115,11 +99,7 @@ nav:empty{display:none;padding:0;border:0;height:0;overflow:hidden}
 </style></head><body>
 <div id="hdr"></div>
 <main><div class="card col" style="max-width:420px;margin:30px auto">
-<div class="splash-brand">
-  <div class="splash-logo">🍽️</div>
-  <h1 class="brand-title">Gestion Multiples<br>de Restaurant</h1>
-  <p class="mut brand-sub">Gérez vos restaurants, commandes et livraisons — même hors ligne.</p>
-</div>
+<h2 class="brand" style="font-size:23px;line-height:1.25">🍽️ Gestion Multiples<br>de <span>Restaurant</span></h2><div class="mut">Gérez votre restaurant, même sans connexion.</div>
 <div class="row" id="tabs"></div><div id="f" class="col"></div><div id="msg" style="color:var(--bad)"></div>
 </div></main>
 <script src="db.js"></script>
@@ -206,6 +186,8 @@ function notify(t,b){toast(t+(b?' — '+b:''));try{if(window.Notification&&Notif
 document.addEventListener('click',()=>{try{window.Notification&&Notification.permission=='default'&&Notification.requestPermission()}catch(e){}},{once:true});
 </script><script>
 document.body.className='auth';hdr('');document.getElementById('lo').remove();
+try{const q=new URLSearchParams(location.search).get('resto');if(q)store.s('l','rg_target',q)}catch(e){}
+{const tg=store.g('l','rg_target'),tr=tg&&D.get().rests.find(r=>r.slug==tg);if(tr)document.querySelector('.brand').insertAdjacentHTML('afterend','<div class="card" style="margin:8px 0;border-inline-start:6px solid var(--gold)">🍽️ <b>'+esc(tr.name)+'</b><br><span class="mut">Connectez-vous ou créez un compte client pour voir le menu et commander.</span></div>')}
 const go={owner:'owner.html',restaurant:'restaurant.html',client:'client.html',driver:'driver.html'};
 const hasOwner=()=>true;
 let view='l',kind='c';
@@ -285,41 +267,28 @@ if(me())navTo(isOwnerAccount(me())?'owner.html':go[me().role]);else draw();
 </script>
 <script>
 (()=> {
- const BASE='./', KEY='restogest_seen_version';
- let deferredInstall=null;
- const banner=document.createElement('div');
- banner.id='rg-update-banner';
- banner.style.cssText='display:none;position:fixed;left:12px;right:12px;bottom:14px;z-index:99999;background:#14213d;color:white;padding:14px 16px;border-radius:16px;box-shadow:0 8px 30px #0005;font:14px/1.45 system-ui';
- banner.innerHTML='<div style="font-weight:700;margin-bottom:5px" id="rg-update-title">Mise à jour disponible</div><div id="rg-update-msg" style="opacity:.9;margin-bottom:10px"></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button id="rg-update-now" style="background:#ffb703;color:#14213d;border:0;border-radius:9px;padding:10px 14px;font-weight:700">Mettre à jour</button><button id="rg-install" style="background:#fff;color:#14213d;border:0;border-radius:9px;padding:10px 14px;font-weight:700">Installer l’application</button><button id="rg-update-close" style="background:transparent;color:#fff;border:1px solid #ffffff66;border-radius:9px;padding:10px 12px">Plus tard</button></div>';
- document.addEventListener('DOMContentLoaded',()=>{
-   document.body.appendChild(banner);
-   const install=document.getElementById('rg-install');
-   install.addEventListener('click',async()=>{
-     if(deferredInstall){deferredInstall.prompt();await deferredInstall.userChoice;deferredInstall=null;install.style.display='none'}
-     else alert('Pour installer : ouvrez le menu ⋮ de votre navigateur puis choisissez « Installer l’application » ou « Ajouter à l’écran d’accueil ».');
-   });
-   document.getElementById('rg-update-close').onclick=()=>banner.style.display='none';
-   document.getElementById('rg-update-now').onclick=async()=>{
-     try{if(navigator.serviceWorker){const reg=await navigator.serviceWorker.getRegistration();if(reg)await reg.update();if(reg&&reg.waiting)reg.waiting.postMessage({type:'SKIP_WAITING'})}}catch(e){}
-     location.reload(true);
-   };
- });
- addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;const b=document.getElementById('rg-install');if(b)b.style.display='inline-block';showBanner('Installer RestoGest','Installez l’application sur votre téléphone pour y accéder rapidement.')});
- addEventListener('appinstalled',()=>{deferredInstall=null;const b=document.getElementById('rg-install');if(b)b.style.display='none'});
- function showBanner(title,message){const t=document.getElementById('rg-update-title'),m=document.getElementById('rg-update-msg');if(t)t.textContent=title;if(m)m.textContent=message||'';if(banner)banner.style.display='block'}
+ const KEY='restogest_seen_version';let pending='';
+ const bar=document.createElement('div');bar.id='rg-update-banner';
+ bar.style.cssText='display:none;position:fixed;top:0;left:0;right:0;z-index:99999;align-items:center;gap:10px;background:#14213d;color:#fff;padding:10px 12px;padding-top:calc(10px + env(safe-area-inset-top,0px));box-shadow:0 6px 22px #0006;font:14px/1.35 system-ui';
+ bar.innerHTML='<span id="rg-update-msg" style="flex:1"></span><button id="rg-update-now" style="background:#ffb703;color:#14213d;border:0;border-radius:10px;padding:10px 14px;font-weight:800;white-space:nowrap">🔄 Mise à jour</button>';
+ (document.body||document.documentElement).appendChild(bar);
+ document.getElementById('rg-update-now').onclick=async()=>{
+   if(pending)try{localStorage.setItem(KEY,pending)}catch(e){}
+   try{if(navigator.serviceWorker){const reg=await navigator.serviceWorker.getRegistration();if(reg)await reg.update();if(reg&&reg.waiting)reg.waiting.postMessage({type:'SKIP_WAITING'})}}catch(e){}
+   location.reload();
+ };
  async function checkVersion(){
    try{
     const r=await fetch('./version.json?ts='+Date.now(),{cache:'no-store'});if(!r.ok)return;
     const data=await r.json();if(!data.version)return;
     const seen=localStorage.getItem(KEY);
-    if(!seen){localStorage.setItem(KEY,data.version);return}
-    if(seen!==String(data.version)){showBanner('Nouvelle version RestoGest disponible',data.message||'Une mise à jour est disponible. Appuyez sur « Mettre à jour ».');}
+    if(!seen){localStorage.setItem(KEY,String(data.version));return}
+    if(data.notify===true&&seen!==String(data.version)){pending=String(data.version);document.getElementById('rg-update-msg').textContent=data.message||'Une nouvelle version est disponible.';bar.style.display='flex'}
+    else bar.style.display='none';
    }catch(e){}
  }
  checkVersion();setInterval(checkVersion,5*60*1000);
- if('serviceWorker' in navigator && location.protocol.startsWith('http')){
-   navigator.serviceWorker.register('./sw.js').catch(()=>{});
- }
+ if('serviceWorker' in navigator && location.protocol.startsWith('http')){navigator.serviceWorker.register('./sw.js').catch(()=>{})}
 })();
 </script>
 </body></html>

@@ -1,8 +1,4 @@
-<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Restaurant — Gestion Multiples de Restaurant</title>
-<meta name="theme-color" content="#14213d">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icon-192.png">
-<style>:root{--bg:#f4f5f9;--card:#fff;--ink:#16213e;--mut:#6a7390;--bd:#e3e6ef;--navy:#14213d;--navy2:#26417a;--gold:#ffb703;--gold2:#fb8500;--ok:#12a36b;--bad:#e5383b;--acc:#fb8500;--kpi:#26417a;--sh:0 6px 22px rgba(20,33,61,.08)}
+<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Restaurant</title><style>:root{--bg:#f4f5f9;--card:#fff;--ink:#16213e;--mut:#6a7390;--bd:#e3e6ef;--navy:#14213d;--navy2:#26417a;--gold:#ffb703;--gold2:#fb8500;--ok:#12a36b;--bad:#e5383b;--acc:#fb8500;--kpi:#26417a;--sh:0 6px 22px rgba(20,33,61,.08)}
 @media(prefers-color-scheme:dark){:root{--bg:#0d1325;--card:#161f38;--ink:#eef1fb;--mut:#93a0c4;--bd:#27345a;--kpi:#ffc93c;--sh:0 6px 22px rgba(0,0,0,.35)}}
 *{box-sizing:border-box}
 body{margin:0;font:15px/1.55 "Segoe UI",system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--ink)}
@@ -103,12 +99,16 @@ nav:empty{display:none;padding:0;border:0;height:0;overflow:hidden}
 </style></head><body>
 <div id="hdr"></div><nav id="nav"></nav><main id="m"></main><div id="receipt"></div>
 <script src="db.js"></script>
+<script src="chat.js"></script>
+<script src="charts.js"></script>
+<script src="qr.js"></script>
+<script src="rest-report.js"></script>
 <script>let SH=window;try{if(window.parent!==window&&window.parent.nav)SH=window.parent}catch(e){}
 SH.__m=SH.__m||{l:{},s:{}};
 const store={g(w,k){try{const v=(w=='l'?localStorage:sessionStorage).getItem(k);if(v!==null)return v}catch(e){}return SH.__m[w][k]??null},
  s(w,k,v){try{(w=='l'?localStorage:sessionStorage).setItem(k,v)}catch(e){}SH.__m[w][k]=v},clr(){try{sessionStorage.clear()}catch(e){}SH.__m.s={}}};
 const K='rm_db',LANGS={fr:'Français',en:'English',ar:'العربية',es:'Español'};
-const TL={account:'Paramètres du compte',dash:'Tableau de bord',pos:'Caisse',hist:'Historique des ventes',orders:'Commandes',menu:'Carte / Menu',drivers:'Livreurs',settings:'Réglages',restos:'Restaurants',myorders:'Mes commandes',logout:'Déconnexion'};
+const TL={support:'💬 Support',account:'Paramètres du compte',dash:'Tableau de bord',pos:'Caisse',hist:'Historique des ventes',orders:'Commandes',menu:'Carte / Menu',drivers:'Livreurs',settings:'Réglages',restos:'Restaurants',myorders:'Mes commandes',logout:'Déconnexion'};
 const T={en:{account:'Account settings',dash:'Dashboard',pos:'Cash register',hist:'Sales history',orders:'Orders',menu:'Menu',drivers:'Drivers',settings:'Settings',restos:'Restaurants',myorders:'My orders',logout:'Log out'},
 es:{account:'Ajustes de la cuenta',dash:'Panel',pos:'Caja',hist:'Historial de ventas',orders:'Pedidos',menu:'Menú',drivers:'Repartidores',settings:'Ajustes',restos:'Restaurantes',myorders:'Mis pedidos',logout:'Salir'},
 ar:{account:'إعدادات الحساب',dash:'لوحة القيادة',pos:'الصندوق',hist:'سجل المبيعات',orders:'الطلبات',menu:'القائمة',drivers:'السائقون',settings:'الإعدادات',restos:'المطاعم',myorders:'طلباتي',logout:'خروج'}};
@@ -185,11 +185,11 @@ function subInfo(r){const n=Date.now(),dl=e=>Math.max(0,Math.ceil((e-n)/864e5));
 function notify(t,b){toast(t+(b?' — '+b:''));try{if(window.Notification&&Notification.permission=='granted')new Notification(t,{body:b||''})}catch(e){}}
 document.addEventListener('click',()=>{try{window.Notification&&Notification.permission=='default'&&Notification.requestPermission()}catch(e){}},{once:true});
 </script><script>
-const U=guard('restaurant');var setSub='rest';let tab=null,cart=[],seen=null;
+const U=guard('restaurant');U&&RGChat.watch(U.id);var setSub='rest';let tab=null,cart=[],seen=null;
 const R=()=>D.get().rests.find(r=>r.id==U.restId);
 const upd=f=>{const d=D.get();f(d.rests.find(r=>r.id==U.restId),d);D.save(d)};
 const day=ts=>new Date(ts).toISOString().slice(0,10);
-const tabs=['sub','dash','pos','orders','menu','hist','drivers','settings'];
+const tabs=['sub','dash','pos','orders','menu','hist','report','drivers','support','settings'];
 const tabMeta={
  sub:{label:'Abonnement Pro',ico:'⭐'},
  dash:{label:'Tableau de bord',ico:'⊞'},
@@ -198,10 +198,12 @@ const tabMeta={
  menu:{label:'Menu',ico:'🍴'},
  hist:{label:'Historique des ventes',ico:'🕐'},
  drivers:{label:'Gestion des livreurs',ico:'🚚'},
+ report:{label:'Rapport du chiffre d\'affaires',ico:'📈'},
+ support:{label:'Support (écrire à l\'administrateur)',ico:'💬'},
  settings:{label:'Paramètres et réglages',ico:'⚙️'}
 };
 function homeGrid(){const pend=D.get().orders.filter(o=>o.restId==U.restId&&o.status=='en attente').length;
- const order=[ 'sub','dash','pos','orders','menu','hist','drivers','settings'];
+ const order=[ 'sub','dash','pos','orders','menu','hist','report','drivers','support','settings'];
  const btns=order.map(k=>{const m=tabMeta[k];const badge=(k=='orders'&&pend)?` <span class="badge">${pend}</span>`:'';
   const cls=(k==='settings'||k==='sub')?'hg-btn full':'hg-btn';
   return `<button class="${cls}" onclick="tab='${k}';render()"><span class="ico">${m.ico}</span><span>${m.label}${badge}</span></button>`}).join('');
@@ -268,7 +270,7 @@ function render(){const r=R(),s=subInfo(r);
    lo.parentNode.insertBefore(b,lo);
   }
  }
- if(!s.ok){m.innerHTML=tab==='account'?passwordCard():proUI(r,s)+`<button type="button" class="sec" onclick="tab='account';render()">🔑 Paramètres du compte</button>`;return}
+ if(!s.ok){m.innerHTML=tab==='account'?passwordCard():tab==='support'?RGChat.userView(U):proUI(r,s)+`<div class="row" style="gap:8px"><button type="button" class="sec" onclick="tab='support';render()">💬 Support</button><button type="button" class="sec" onclick="tab='account';render()">🔑 Paramètres du compte</button></div>`;return}
  if(!tab){m.innerHTML=banner(r,s)+homeGrid();return}
  const back=`<div class="back-row"><button type="button" class="back-btn" onclick="tab=null;render()">← Retour à l'accueil</button></div>`;
  m.innerHTML=back+(V[tab])(r)}
@@ -348,8 +350,10 @@ drivers(r){const dv=D.get().users.filter(u=>u.restId==r.id&&u.role=='driver');
  return `<div class="card row"><input id="dn" placeholder="Nom" class="g"><input id="dp" placeholder="Téléphone"><input id="dw" type="password" placeholder="Mot de passe"><input id="dw2" type="password" placeholder="Confirmez le mot de passe"><button onclick="addD()">Créer le compte livreur</button></div>
  <div class="card"><table>${dv.map(u=>`<tr><td>${esc(u.name)}</td><td>${esc(u.phone)}</td></tr>`).join('')||'<tr><td class="mut">Aucun livreur.</td></tr>'}</table></div>`},
 sub(r){return proUI(r,subInfo(r))},
+support(r){return RGChat.userView(U)},
+report(r){return RR.view(r)},
 settings(r){const bar=[['rest','🍽️ Restaurant'],['pay','💳 Paiements'],['acc','🔑 Paramètres du compte']].map(([k,l])=>`<button type="button" class="${setSub==k?'':'sec'}" onclick="setSub='${k}';render()">${l}</button>`).join('');
- return `<div class="row" style="gap:8px;flex-wrap:wrap;margin-bottom:10px">${bar}</div>`+(setSub=='acc'?passwordCard():setSub=='pay'?payCard(r):settingsMain(r))},
+ return `<div class="row" style="gap:8px;flex-wrap:wrap;margin-bottom:10px">${bar}</div>`+(setSub=='acc'?passwordCard():setSub=='pay'?payCard(r):V.settingsMain(r))},
 settingsMain(r){return `<div class="card col"><label>Nom<input id="sn" value="${esc(r.name)}" style="width:100%"></label>
  <div class="row">${r.logo?`<img src="${r.logo}" class="logo">`:''}<label>Logo <input type="file" id="sl" accept="image/*"></label></div>
  <label>Téléphone<input id="sp" value="${esc(r.phone)}" style="width:100%"></label><label>Adresse<input id="sa" value="${esc(r.address)}" style="width:100%"></label>
@@ -364,7 +368,7 @@ settingsMain(r){return `<div class="card col"><label>Nom<input id="sn" value="${
  </div>
  <label>Devise<select id="sc">${curOptions(r.currency)}</select></label>
  <button onclick="saveS()">Enregistrer</button></div>
- <div class="card"><b>Carte de visite</b><p><a href="${cardUrl(r.slug)}" target="_blank">Ouvrir la carte de visite de ${esc(r.name)}</a></p></div>`}};
+ <div class="card"><b>Carte de visite</b><p><a href="${cardUrl(r.slug)}" target="_blank">Ouvrir la carte de visite de ${esc(r.name)}</a></p><div style="text-align:center">${RGQR.svg(new URL('index.html?resto='+r.slug,location.href).href,150)}<p class="mut">📱 QR code : vos clients arrivent directement sur votre restaurant.</p></div></div>`}};
 function addC(i){const p=R().menu[i],x=cart.find(c=>c.n==p.n);x?x.q++:cart.push({n:p.n,p:p.p,q:1});render()}
 function sell(){const r=R(),s={id:uid(),date:Date.now(),items:cart,total:cart.reduce((a,i)=>a+i.p*i.q,0),pay:pm.value,src:'caisse'};
  upd(r=>r.sales.push(s));cart=[];printHTML(receipt(r,s));render()}
@@ -410,41 +414,28 @@ render();
 </script>
 <script>
 (()=> {
- const BASE='./', KEY='restogest_seen_version';
- let deferredInstall=null;
- const banner=document.createElement('div');
- banner.id='rg-update-banner';
- banner.style.cssText='display:none;position:fixed;left:12px;right:12px;bottom:14px;z-index:99999;background:#14213d;color:white;padding:14px 16px;border-radius:16px;box-shadow:0 8px 30px #0005;font:14px/1.45 system-ui';
- banner.innerHTML='<div style="font-weight:700;margin-bottom:5px" id="rg-update-title">Mise à jour disponible</div><div id="rg-update-msg" style="opacity:.9;margin-bottom:10px"></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button id="rg-update-now" style="background:#ffb703;color:#14213d;border:0;border-radius:9px;padding:10px 14px;font-weight:700">Mettre à jour</button><button id="rg-install" style="background:#fff;color:#14213d;border:0;border-radius:9px;padding:10px 14px;font-weight:700">Installer l’application</button><button id="rg-update-close" style="background:transparent;color:#fff;border:1px solid #ffffff66;border-radius:9px;padding:10px 12px">Plus tard</button></div>';
- document.addEventListener('DOMContentLoaded',()=>{
-   document.body.appendChild(banner);
-   const install=document.getElementById('rg-install');
-   install.addEventListener('click',async()=>{
-     if(deferredInstall){deferredInstall.prompt();await deferredInstall.userChoice;deferredInstall=null;install.style.display='none'}
-     else alert('Pour installer : ouvrez le menu ⋮ de votre navigateur puis choisissez « Installer l’application » ou « Ajouter à l’écran d’accueil ».');
-   });
-   document.getElementById('rg-update-close').onclick=()=>banner.style.display='none';
-   document.getElementById('rg-update-now').onclick=async()=>{
-     try{if(navigator.serviceWorker){const reg=await navigator.serviceWorker.getRegistration();if(reg)await reg.update();if(reg&&reg.waiting)reg.waiting.postMessage({type:'SKIP_WAITING'})}}catch(e){}
-     location.reload(true);
-   };
- });
- addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;const b=document.getElementById('rg-install');if(b)b.style.display='inline-block';showBanner('Installer RestoGest','Installez l’application sur votre téléphone pour y accéder rapidement.')});
- addEventListener('appinstalled',()=>{deferredInstall=null;const b=document.getElementById('rg-install');if(b)b.style.display='none'});
- function showBanner(title,message){const t=document.getElementById('rg-update-title'),m=document.getElementById('rg-update-msg');if(t)t.textContent=title;if(m)m.textContent=message||'';if(banner)banner.style.display='block'}
+ const KEY='restogest_seen_version';let pending='';
+ const bar=document.createElement('div');bar.id='rg-update-banner';
+ bar.style.cssText='display:none;position:fixed;top:0;left:0;right:0;z-index:99999;align-items:center;gap:10px;background:#14213d;color:#fff;padding:10px 12px;padding-top:calc(10px + env(safe-area-inset-top,0px));box-shadow:0 6px 22px #0006;font:14px/1.35 system-ui';
+ bar.innerHTML='<span id="rg-update-msg" style="flex:1"></span><button id="rg-update-now" style="background:#ffb703;color:#14213d;border:0;border-radius:10px;padding:10px 14px;font-weight:800;white-space:nowrap">🔄 Mise à jour</button>';
+ (document.body||document.documentElement).appendChild(bar);
+ document.getElementById('rg-update-now').onclick=async()=>{
+   if(pending)try{localStorage.setItem(KEY,pending)}catch(e){}
+   try{if(navigator.serviceWorker){const reg=await navigator.serviceWorker.getRegistration();if(reg)await reg.update();if(reg&&reg.waiting)reg.waiting.postMessage({type:'SKIP_WAITING'})}}catch(e){}
+   location.reload();
+ };
  async function checkVersion(){
    try{
     const r=await fetch('./version.json?ts='+Date.now(),{cache:'no-store'});if(!r.ok)return;
     const data=await r.json();if(!data.version)return;
     const seen=localStorage.getItem(KEY);
-    if(!seen){localStorage.setItem(KEY,data.version);return}
-    if(seen!==String(data.version)){showBanner('Nouvelle version RestoGest disponible',data.message||'Une mise à jour est disponible. Appuyez sur « Mettre à jour ».');}
+    if(!seen){localStorage.setItem(KEY,String(data.version));return}
+    if(data.notify===true&&seen!==String(data.version)){pending=String(data.version);document.getElementById('rg-update-msg').textContent=data.message||'Une nouvelle version est disponible.';bar.style.display='flex'}
+    else bar.style.display='none';
    }catch(e){}
  }
  checkVersion();setInterval(checkVersion,5*60*1000);
- if('serviceWorker' in navigator && location.protocol.startsWith('http')){
-   navigator.serviceWorker.register('./sw.js').catch(()=>{});
- }
+ if('serviceWorker' in navigator && location.protocol.startsWith('http')){navigator.serviceWorker.register('./sw.js').catch(()=>{})}
 })();
 </script>
 </body></html>

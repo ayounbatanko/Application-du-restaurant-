@@ -1,8 +1,4 @@
-<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Client — Gestion Multiples de Restaurant</title>
-<meta name="theme-color" content="#14213d">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icon-192.png">
-<style>:root{--bg:#f4f5f9;--card:#fff;--ink:#16213e;--mut:#6a7390;--bd:#e3e6ef;--navy:#14213d;--navy2:#26417a;--gold:#ffb703;--gold2:#fb8500;--ok:#12a36b;--bad:#e5383b;--acc:#fb8500;--kpi:#26417a;--sh:0 6px 22px rgba(20,33,61,.08)}
+<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Client</title><style>:root{--bg:#f4f5f9;--card:#fff;--ink:#16213e;--mut:#6a7390;--bd:#e3e6ef;--navy:#14213d;--navy2:#26417a;--gold:#ffb703;--gold2:#fb8500;--ok:#12a36b;--bad:#e5383b;--acc:#fb8500;--kpi:#26417a;--sh:0 6px 22px rgba(20,33,61,.08)}
 @media(prefers-color-scheme:dark){:root{--bg:#0d1325;--card:#161f38;--ink:#eef1fb;--mut:#93a0c4;--bd:#27345a;--kpi:#ffc93c;--sh:0 6px 22px rgba(0,0,0,.35)}}
 *{box-sizing:border-box}
 body{margin:0;font:15px/1.55 "Segoe UI",system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--ink)}
@@ -100,6 +96,8 @@ nav:empty{display:none;padding:0;border:0;height:0;overflow:hidden}
   font-weight:700!important;box-shadow:0 4px 12px rgba(20,33,61,.35)!important;
 }
 .back-btn:hover{filter:brightness(1.1);transform:translateY(-1px)}
+
+.trk{margin:10px 0 4px}.trk .st{display:flex;align-items:center;gap:10px;position:relative;padding:5px 0;color:var(--mut)}.trk .st span{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--bd,#e3e6ef);font-size:14px;flex:none}.trk .st:not(:last-child):before{content:"";position:absolute;inset-inline-start:13px;top:31px;bottom:-5px;width:2px;background:var(--bd,#e3e6ef)}.trk .st.done span{background:#12a36b;color:#fff}.trk .st.done:before{background:#12a36b}.trk .st.cur span{background:#ffb703;color:#14213d;animation:trkp 1.4s infinite}.trk .st.cur b,.trk .st.done b{color:var(--ink)}@keyframes trkp{50%{box-shadow:0 0 0 6px rgba(255,183,3,.3)}}
 </style><style>
 .menu-search{width:100%;margin:10px 0 14px;padding:12px 14px;border-radius:12px;border:1.5px solid var(--bd);font:inherit}
 .cart-bar{position:sticky;bottom:12px;z-index:6;background:linear-gradient(135deg,#14213d,#26417a);color:#fff;border-radius:16px;padding:14px 16px;box-shadow:0 10px 28px rgba(20,33,61,.35);display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
@@ -112,12 +110,13 @@ nav:empty{display:none;padding:0;border:0;height:0;overflow:hidden}
 </style></head><body>
 <div id="hdr"></div><nav id="nav"></nav><main id="m"></main><div id="receipt"></div>
 <script src="db.js"></script>
+<script src="chat.js"></script>
 <script>let SH=window;try{if(window.parent!==window&&window.parent.nav)SH=window.parent}catch(e){}
 SH.__m=SH.__m||{l:{},s:{}};
 const store={g(w,k){try{const v=(w=='l'?localStorage:sessionStorage).getItem(k);if(v!==null)return v}catch(e){}return SH.__m[w][k]??null},
  s(w,k,v){try{(w=='l'?localStorage:sessionStorage).setItem(k,v)}catch(e){}SH.__m[w][k]=v},clr(){try{sessionStorage.clear()}catch(e){}SH.__m.s={}}};
 const K='rm_db',LANGS={fr:'Français',en:'English',ar:'العربية',es:'Español'};
-const TL={account:'Paramètres du compte',dash:'Tableau de bord',pos:'Caisse',hist:'Historique des ventes',orders:'Commandes',menu:'Carte / Menu',drivers:'Livreurs',settings:'Réglages',restos:'Restaurants',myorders:'Mes commandes',logout:'Déconnexion'};
+const TL={support:'💬 Support',account:'Paramètres du compte',dash:'Tableau de bord',pos:'Caisse',hist:'Historique des ventes',orders:'Commandes',menu:'Carte / Menu',drivers:'Livreurs',settings:'Réglages',restos:'Restaurants',myorders:'Mes commandes',logout:'Déconnexion'};
 const T={en:{account:'Account settings',dash:'Dashboard',pos:'Cash register',hist:'Sales history',orders:'Orders',menu:'Menu',drivers:'Drivers',settings:'Settings',restos:'Restaurants',myorders:'My orders',logout:'Log out'},
 es:{account:'Ajustes de la cuenta',dash:'Panel',pos:'Caja',hist:'Historial de ventas',orders:'Pedidos',menu:'Menú',drivers:'Repartidores',settings:'Ajustes',restos:'Restaurantes',myorders:'Mis pedidos',logout:'Salir'},
 ar:{account:'إعدادات الحساب',dash:'لوحة القيادة',pos:'الصندوق',hist:'سجل المبيعات',orders:'الطلبات',menu:'القائمة',drivers:'السائقون',settings:'الإعدادات',restos:'المطاعم',myorders:'طلباتي',logout:'خروج'}};
@@ -204,24 +203,7 @@ if(navigator.geolocation){
   );
 }
 const ST=['en attente','acceptée','préparée','colis récupéré','en route','arrivé','terminée'];
-function render(){hdr(U.name);nav.innerHTML=['restos','myorders','support','account'].map(k=>`<button class="${k==tab?'on':''}" onclick="tab='${k}';cur=null;menuQ='';render()">${k==='support'?'💬 Support':t(k)}</button>`).join('');m.innerHTML=tab=='account'?passwordCard():(tab=='support'?clientChat():(tab=='restos'?(cur?menu():list()):orders()))}
-function clientChat(){
- const d=D.get();const msgs=(d.messages||[]).filter(m=>(m.from===U.id||m.to===U.id)).sort((a,b)=>(a.ts||0)-(b.ts||0));
- return `<div class="card col"><h3 style="margin:0">💬 Support propriétaire</h3>
-  <p class="mut">Écrivez au propriétaire en cas de problème avec une commande ou votre compte.</p>
-  <div id="cThread" style="max-height:340px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:8px 0">
-   ${msgs.map(m=>{const mine=m.from===U.id;return `<div style="align-self:${mine?'flex-end':'flex-start'};max-width:85%;background:${mine?'linear-gradient(135deg,#14213d,#26417a)':'var(--bd)'};color:${mine?'#fff':'var(--ink)'};padding:10px 14px;border-radius:14px;font-size:14px"><div>${esc(m.text||'')}</div><div class="mut" style="font-size:11px;margin-top:4px;opacity:.8">${fdate(m.ts)}</div></div>`}).join('')||'<p class="mut">Aucun message. Posez votre question ci-dessous.</p>'}
-  </div>
-  <div class="row"><input id="cMsg" class="g" placeholder="Votre message…" onkeydown="if(event.key==='Enter')sendClientChat()"><button type="button" onclick="sendClientChat()">Envoyer</button></div>
- </div>`;
-}
-function sendClientChat(){
- const text=(document.getElementById('cMsg')?.value||'').trim();if(!text)return;
- const d=D.get();if(!d.messages)d.messages=[];
- d.messages.push({id:uid(),from:U.id,fromName:U.name,to:'owner',text,ts:Date.now()});
- D.save(d);document.getElementById('cMsg').value='';render();
- setTimeout(()=>{const t=document.getElementById('cThread');if(t)t.scrollTop=t.scrollHeight},50);
-}
+function render(){hdr(U.name);nav.innerHTML=['restos','myorders','support','account'].map(k=>`<button class="${k==tab?'on':''}" onclick="tab='${k}';cur=null;menuQ='';render()">${t(k)}</button>`).join('');m.innerHTML=tab=='account'?passwordCard():tab=='support'?RGChat.userView(U):(tab=='restos'?(cur?menu():list()):orders())}
 function dist(d){return d==null?'':d<1?' — '+Math.round(d*1000)+' m':' — '+d.toFixed(1)+' km'}
 function list(){let rs=D.get().rests.filter(r=>subInfo(r).ok);
  rs=rs.map(r=>({r,d:pos&&r.lat!=null&&r.lng!=null?km(pos,[r.lat,r.lng]):null})).sort((a,b)=>(a.d??1e9)-(b.d??1e9));
@@ -266,9 +248,8 @@ function renderDishes(r,dishes){
  return dishes.map((p,idx)=>{
   const key=p.n;
   const qty=cart[key]||0;
-  const safeKey=encodeURIComponent(key);
   return `<div class="card">${gal(p.imgs)}<div class="row"><div class="g"><b>${esc(p.n)}</b><div class="mut">${esc(p.desc||'')}</div><b style="color:var(--acc)">${money(p.p,r.currency)}</b></div>
-  <div class="qty-row"><button class="sec" type="button" data-act="qty" data-n="${safeKey}" data-v="-1">−</button><span>${qty}</span><button type="button" data-act="qty" data-n="${safeKey}" data-v="1">+</button></div></div></div>`}).join('')}
+  <div class="qty-row"><button class="sec" type="button" data-n="${esc(key)}" onclick="qByName(this.dataset.n,-1)">−</button><span>${qty}</span><button type="button" data-n="${esc(key)}" onclick="qByName(this.dataset.n,1)">+</button></div></div></div>`}).join('')}
 function renderMenuOnly(){
  const r=D.get().rests.find(r=>r.id==cur);if(!r)return;
  const q=(menuQ||'').trim().toLowerCase();
@@ -293,15 +274,7 @@ function capturePos(done){
   e=>{if(msg)msg.textContent='❌ Position non obtenue. Activez le GPS et autorisez la localisation.';alert('Impossible de récupérer votre position.\\n\\n1. Activez le GPS du téléphone\\n2. Autorisez la localisation pour ce site\\n3. Réessayez');},
   {enableHighAccuracy:true,timeout:20000,maximumAge:0}
  )}
-function qByName(n,v){cart[n]=Math.max(0,(cart[n]||0)+v);if(!cart[n])delete cart[n];render()}
-document.addEventListener('click',function(e){
-  const btn=e.target.closest('[data-act="qty"]');
-  if(!btn)return;
-  e.preventDefault();
-  const n=decodeURIComponent(btn.getAttribute('data-n')||'');
-  const v=+(btn.getAttribute('data-v')||0);
-  if(n)qByName(n,v);
-});
+function qByName(n,v){const y=window.scrollY;cart[n]=Math.max(0,(cart[n]||0)+v);if(!cart[n])delete cart[n];render();window.scrollTo(0,y)}
 function order(){
  const r=D.get().rests.find(r=>r.id==cur);
  const items=(r?.menu||[]).filter(p=>cart[p.n]>0).map(p=>({n:p.n,p:p.p,q:cart[p.n]}));
@@ -336,57 +309,45 @@ function order(){
  notify('Commande envoyée ✓','Le restaurant '+r.name+' a reçu votre position GPS');
  render();
 }
+function trk(st){const L=['Commande envoyée','Acceptée par le restaurant','Préparée','Prise en charge par le livreur','Commande en route','Commande arrivée chez vous','Livrée'],I=['📨','✅','👨‍🍳','📦','🛵','📍','🎉'],i=st=='terminée'?7:ST.indexOf(st);return `<div class="trk">${L.map((l,k)=>`<div class="st ${k<i?'done':k==i?'cur':''}"><span>${k<i?'✓':I[k]}</span><b>${l}</b></div>`).join('')}</div>`}
 function orders(){const d=D.get();return d.orders.filter(o=>o.clientId==U.id).reverse().map(o=>{const r=d.rests.find(r=>r.id==o.restId),i=ST.indexOf(o.status),end=['refusée','annulée'].includes(o.status);
  const dest=o.cLat!=null?o.cLat+','+o.cLng:encodeURIComponent(o.addr),src=o.driverPos?o.driverPos.join(','):'';
  return `<div class="card"><div class="row"><b>${esc(r?.name)}</b> <span class="badge" data-s="${o.status}">${o.status}</span><span class="mut">#${o.id} — ${fdate(o.created)}</span></div>
  <div>${o.items.map(x=>`${esc(x.n)} ×${x.q}`).join(', ')} — <b>${money(o.total,r?.currency)}</b></div>
  ${o.cLat!=null?`<div class="mut">📍 Position envoyée : <a target="_blank" rel="noopener" href="https://www.google.com/maps?q=${o.cLat},${o.cLng}">Voir sur Google Maps</a></div>`:''}
- ${end?'':`<div class="mut">${ST.map((s,k)=>k<=i?`<b>${s}</b>`:s).join(' › ')}</div>`}
+ ${end?'':trk(o.status)}
  ${o.status=='en route'?`<iframe src="https://maps.google.com/maps?saddr=${src}&daddr=${dest}&output=embed"></iframe>`:''}
  <div class="row">${!end&&o.status!='terminée'?`<button class="bad" onclick="cancel('${o.id}')">Annuler la commande</button>`:''}<button class="sec" onclick="rc('${o.id}')">Reçu PDF</button></div></div>`}).join('')||'<p class="mut">Aucune commande.</p>'}
 function cancel(id){if(confirm('Annuler cette commande ?')){setOrder(id,{status:'annulée'});render()}}
 function rc(id){const d=D.get(),o=d.orders.find(o=>o.id==id);alert('Dans la fenêtre d\'impression, choisissez « Enregistrer au format PDF ».');printHTML(receipt(d.rests.find(r=>r.id==o.restId),o,'Reçu de commande'))}
 setInterval(()=>{const mine=D.get().orders.filter(o=>o.clientId==U.id),cu=Object.fromEntries(mine.map(o=>[o.id,o.status])),sig=JSON.stringify(mine.map(o=>[o.id,o.status,o.driverPos]));
  if(seen){for(const k in cu)if(seen[k]!=cu[k])notify('Commande #'+k,cu[k]);if(tab=='myorders'&&sig!=seenSig)render()}seen=cu;seenSig=sig},2000);
-render();
+U&&RGChat.watch(U.id);try{const tg=store.g('l','rg_target');if(tg){const rr=D.get().rests.find(r=>r.slug==tg);if(rr){tab='restos';cur=rr.id;cart={}}store.s('l','rg_target','')}}catch(e){}render();
 </script>
 <script>
 (()=> {
- const BASE='./', KEY='restogest_seen_version';
- let deferredInstall=null;
- const banner=document.createElement('div');
- banner.id='rg-update-banner';
- banner.style.cssText='display:none;position:fixed;left:12px;right:12px;bottom:14px;z-index:99999;background:#14213d;color:white;padding:14px 16px;border-radius:16px;box-shadow:0 8px 30px #0005;font:14px/1.45 system-ui';
- banner.innerHTML='<div style="font-weight:700;margin-bottom:5px" id="rg-update-title">Mise à jour disponible</div><div id="rg-update-msg" style="opacity:.9;margin-bottom:10px"></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button id="rg-update-now" style="background:#ffb703;color:#14213d;border:0;border-radius:9px;padding:10px 14px;font-weight:700">Mettre à jour</button><button id="rg-install" style="background:#fff;color:#14213d;border:0;border-radius:9px;padding:10px 14px;font-weight:700">Installer l’application</button><button id="rg-update-close" style="background:transparent;color:#fff;border:1px solid #ffffff66;border-radius:9px;padding:10px 12px">Plus tard</button></div>';
- document.addEventListener('DOMContentLoaded',()=>{
-   document.body.appendChild(banner);
-   const install=document.getElementById('rg-install');
-   install.addEventListener('click',async()=>{
-     if(deferredInstall){deferredInstall.prompt();await deferredInstall.userChoice;deferredInstall=null;install.style.display='none'}
-     else alert('Pour installer : ouvrez le menu ⋮ de votre navigateur puis choisissez « Installer l’application » ou « Ajouter à l’écran d’accueil ».');
-   });
-   document.getElementById('rg-update-close').onclick=()=>banner.style.display='none';
-   document.getElementById('rg-update-now').onclick=async()=>{
-     try{if(navigator.serviceWorker){const reg=await navigator.serviceWorker.getRegistration();if(reg)await reg.update();if(reg&&reg.waiting)reg.waiting.postMessage({type:'SKIP_WAITING'})}}catch(e){}
-     location.reload(true);
-   };
- });
- addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;const b=document.getElementById('rg-install');if(b)b.style.display='inline-block';showBanner('Installer RestoGest','Installez l’application sur votre téléphone pour y accéder rapidement.')});
- addEventListener('appinstalled',()=>{deferredInstall=null;const b=document.getElementById('rg-install');if(b)b.style.display='none'});
- function showBanner(title,message){const t=document.getElementById('rg-update-title'),m=document.getElementById('rg-update-msg');if(t)t.textContent=title;if(m)m.textContent=message||'';if(banner)banner.style.display='block'}
+ const KEY='restogest_seen_version';let pending='';
+ const bar=document.createElement('div');bar.id='rg-update-banner';
+ bar.style.cssText='display:none;position:fixed;top:0;left:0;right:0;z-index:99999;align-items:center;gap:10px;background:#14213d;color:#fff;padding:10px 12px;padding-top:calc(10px + env(safe-area-inset-top,0px));box-shadow:0 6px 22px #0006;font:14px/1.35 system-ui';
+ bar.innerHTML='<span id="rg-update-msg" style="flex:1"></span><button id="rg-update-now" style="background:#ffb703;color:#14213d;border:0;border-radius:10px;padding:10px 14px;font-weight:800;white-space:nowrap">🔄 Mise à jour</button>';
+ (document.body||document.documentElement).appendChild(bar);
+ document.getElementById('rg-update-now').onclick=async()=>{
+   if(pending)try{localStorage.setItem(KEY,pending)}catch(e){}
+   try{if(navigator.serviceWorker){const reg=await navigator.serviceWorker.getRegistration();if(reg)await reg.update();if(reg&&reg.waiting)reg.waiting.postMessage({type:'SKIP_WAITING'})}}catch(e){}
+   location.reload();
+ };
  async function checkVersion(){
    try{
     const r=await fetch('./version.json?ts='+Date.now(),{cache:'no-store'});if(!r.ok)return;
     const data=await r.json();if(!data.version)return;
     const seen=localStorage.getItem(KEY);
-    if(!seen){localStorage.setItem(KEY,data.version);return}
-    if(seen!==String(data.version)){showBanner('Nouvelle version RestoGest disponible',data.message||'Une mise à jour est disponible. Appuyez sur « Mettre à jour ».');}
+    if(!seen){localStorage.setItem(KEY,String(data.version));return}
+    if(data.notify===true&&seen!==String(data.version)){pending=String(data.version);document.getElementById('rg-update-msg').textContent=data.message||'Une nouvelle version est disponible.';bar.style.display='flex'}
+    else bar.style.display='none';
    }catch(e){}
  }
  checkVersion();setInterval(checkVersion,5*60*1000);
- if('serviceWorker' in navigator && location.protocol.startsWith('http')){
-   navigator.serviceWorker.register('./sw.js').catch(()=>{});
- }
+ if('serviceWorker' in navigator && location.protocol.startsWith('http')){navigator.serviceWorker.register('./sw.js').catch(()=>{})}
 })();
 </script>
 </body></html>
