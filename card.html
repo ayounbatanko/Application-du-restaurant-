@@ -1,8 +1,166 @@
-<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Carte de visite</title><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#14213d"><link rel="apple-touch-icon" href="icon-192.png"><link rel="stylesheet" href="style.css"></head><body>
+<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Carte de visite</title><style>:root{--bg:#f4f5f9;--card:#fff;--ink:#16213e;--mut:#6a7390;--bd:#e3e6ef;--navy:#14213d;--navy2:#26417a;--gold:#ffb703;--gold2:#fb8500;--ok:#12a36b;--bad:#e5383b;--acc:#fb8500;--kpi:#26417a;--sh:0 6px 22px rgba(20,33,61,.08)}
+@media(prefers-color-scheme:dark){:root{--bg:#0d1325;--card:#161f38;--ink:#eef1fb;--mut:#93a0c4;--bd:#27345a;--kpi:#ffc93c;--sh:0 6px 22px rgba(0,0,0,.35)}}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.55 "Segoe UI",system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--ink)}
+h2,h3{margin:.2em 0 .4em;letter-spacing:-.2px}
+#hdr{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 20px;background:linear-gradient(120deg,#0f1a33,#26417a);color:#fff;position:sticky;top:0;z-index:5;box-shadow:0 4px 16px rgba(0,0,0,.2)}
+#hdr>b{font-size:17px;display:flex;align-items:center;gap:8px}#hdr>b:before{content:"";width:10px;height:10px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 3px rgba(255,183,3,.3)}
+#net{font-size:12px;padding:3px 10px;border-radius:99px;background:rgba(18,163,107,.25);color:#7dffc9}#net.off{background:rgba(229,56,59,.3);color:#ffb3b5}
+#hdr .lang{display:inline-flex;background:rgba(255,255,255,.12);border-radius:99px;padding:3px;gap:2px}
+nav{display:flex;gap:8px;flex-wrap:wrap;padding:12px 18px;background:var(--card);border-bottom:1px solid var(--bd);position:sticky;top:56px;z-index:4;overflow-x:auto}
+main{max-width:1000px;margin:0 auto;padding:18px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:var(--sh)}
+.col{display:flex;flex-direction:column;gap:10px}.col>.card{margin-bottom:0}
+.col>.card:has(.kpi){border-inline-start:6px solid var(--gold)}
+.col>.card:nth-child(2):has(.kpi){border-color:var(--ok)}.col>.card:nth-child(3):has(.kpi){border-color:var(--navy2)}.col>.card:nth-child(4):has(.kpi){border-color:var(--gold2)}
+.kpi{font-size:30px;font-weight:800;color:var(--kpi);line-height:1.2}.mut{color:var(--mut);font-size:13px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.row>.g{flex:1}
+input,select,textarea{font:inherit;padding:10px 12px;border-radius:10px;border:1.5px solid var(--bd);background:var(--card);color:var(--ink);transition:border .15s,box-shadow .15s}
+input:focus,select:focus{outline:0;border-color:var(--gold2);box-shadow:0 0 0 3px rgba(251,133,0,.25)}
+button{font:inherit;font-weight:700;cursor:pointer;padding:10px 18px;border-radius:12px;border:0;color:#1b1400;background:linear-gradient(135deg,var(--gold),var(--gold2));box-shadow:0 4px 12px rgba(251,133,0,.35);transition:transform .15s,box-shadow .15s,filter .15s}
+button:hover{transform:translateY(-2px);filter:brightness(1.05);box-shadow:0 8px 18px rgba(251,133,0,.4)}
+button:active{transform:none}button:focus-visible{outline:3px solid var(--navy2);outline-offset:2px}
+button:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
+button.sec{background:transparent;color:var(--ink);border:1.5px solid var(--bd);box-shadow:none}
+button.sec:hover{border-color:var(--navy2);color:var(--navy2);box-shadow:none}
+@media(prefers-color-scheme:dark){button.sec:hover{border-color:var(--gold);color:var(--gold)}}
+button.bad{background:linear-gradient(135deg,#e5383b,#b1252a);color:#fff;box-shadow:0 4px 12px rgba(229,56,59,.35)}
+nav button{background:transparent;color:var(--ink);border:1.5px solid var(--bd);box-shadow:none;padding:8px 16px;white-space:nowrap}
+nav button:hover{border-color:var(--navy2);box-shadow:none}
+nav button.on{background:linear-gradient(135deg,#14213d,#26417a);color:var(--gold);border-color:transparent;box-shadow:0 4px 12px rgba(20,33,61,.35)}
+#hdr .lang button{background:transparent;box-shadow:none;padding:4px 11px;font-size:12px;color:#fff;border-radius:99px}
+#hdr .lang button.on{background:var(--gold);color:#1b1400}
+#hdr #lo{background:rgba(255,255,255,.14);color:#fff;box-shadow:none;border:1px solid rgba(255,255,255,.4);padding:6px 14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.grid button{padding:16px 8px;background:var(--card);color:var(--ink);border:1.5px solid var(--bd);border-radius:14px;box-shadow:none;line-height:1.3}
+.grid button b{color:var(--gold2);font-size:15px}.grid button:hover{border-color:var(--gold2);background:rgba(255,183,3,.12);box-shadow:var(--sh)}
+table{width:100%;border-collapse:collapse}th{font-size:12px;color:var(--mut);text-transform:none;background:rgba(38,65,122,.07)}
+td,th{padding:9px 8px;border-bottom:1px solid var(--bd);text-align:start}tr:hover td{background:rgba(255,183,3,.07)}
+.badge{padding:3px 11px;border-radius:99px;background:rgba(255,183,3,.25);color:#8a5a00;font-size:12px;font-weight:700}
+.badge[data-s="acceptée"],.badge[data-s="préparée"]{background:rgba(38,65,122,.15);color:var(--navy2)}
+.badge[data-s="en route"]{background:rgba(251,133,0,.2);color:#b45f00}
+.badge[data-s="terminée"]{background:rgba(18,163,107,.18);color:#0a7a4f}
+.badge[data-s="refusée"],.badge[data-s="annulée"]{background:rgba(229,56,59,.15);color:#c1272b}
+.logo{width:58px;height:58px;border-radius:14px;object-fit:cover;background:linear-gradient(135deg,var(--gold),var(--gold2))}
+.toast{position:fixed;bottom:18px;inset-inline-end:18px;background:var(--navy);color:#fff;padding:13px 18px;border-radius:12px;z-index:20;border-inline-start:5px solid var(--gold);box-shadow:0 10px 30px rgba(0,0,0,.35)}
+iframe{width:100%;height:280px;border:0;border-radius:12px}
+#receipt{display:none;font:13px monospace;width:72mm}
+@media print{body>*{display:none!important}#receipt{display:block!important}.pcard{display:block!important}}
+.bizcard{width:340px;border:3px solid var(--gold2);border-radius:18px;padding:22px;text-align:center;margin:20px auto;background:#fff;color:#14213d;box-shadow:var(--sh)}
+body.auth{background:radial-gradient(circle at 15% 0,#2f5aa8 0,#14213d 55%) fixed;min-height:100vh}
+body.auth #hdr{background:transparent;box-shadow:none;position:static}
+body.auth main{padding-top:0}body.auth .card{box-shadow:0 24px 70px rgba(0,0,0,.45);border:0;border-radius:22px;padding:26px}
+.brand{font-size:26px;font-weight:800;margin:0}.brand span{color:var(--gold2)}
+body.auth #hdr>b{display:none}body.auth #hdr{justify-content:flex-end}
+nav{position:static;flex-wrap:nowrap;scrollbar-width:thin}#hdr{position:static}
+.gal{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;margin-bottom:10px}.gal.ph{height:90px;align-items:center;justify-content:center;font-size:34px;background:rgba(255,183,3,.15);border-radius:12px}
+.gi{position:relative;flex:0 0 auto;scroll-snap-align:start}.gi img{height:150px;max-width:260px;object-fit:cover;border-radius:12px;display:block}
+.gi .x{position:absolute;top:6px;inset-inline-end:6px;padding:2px 8px;border-radius:99px;background:rgba(20,33,61,.8);color:#fff;box-shadow:none;font-size:12px}
+.cat{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}.dish{margin:0}.dish p{margin:6px 0}
+.lb{display:inline-block;cursor:pointer;padding:9px 16px;border-radius:12px;border:1.5px solid var(--bd);font-weight:700}.lb:hover{border-color:var(--navy2)}
+textarea{width:100%;font:inherit}
+.pv{margin:10px 0 0}.pvi{flex:0 0 130px;cursor:pointer;scroll-snap-align:start;font-size:13px}.pvi img,.pvi .ph2{width:130px;height:90px;object-fit:cover;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:28px;background:rgba(255,183,3,.15)}.pvi b,.pvi span{display:block}.pvi span{color:var(--acc);font-weight:700}
+.warn{border-inline-start:6px solid var(--gold);background:rgba(255,183,3,.12)}.okc{border-inline-start:6px solid var(--ok)}
+.badge[data-s="pro"]{background:rgba(18,163,107,.18);color:#0a7a4f}.badge[data-s="off"]{background:rgba(229,56,59,.15);color:#c1272b}
+</style></head><body>
 <main><div id="c"></div><div class="row" style="justify-content:center"><button onclick="print()">Imprimer</button><button class="sec" onclick="navTo('index')">Retour</button></div></main>
 <div id="receipt"></div>
-<script src="app.js"></script><script>
+<script>let SH=window;try{if(window.parent!==window&&window.parent.nav)SH=window.parent}catch(e){}
+SH.__m=SH.__m||{l:{},s:{}};
+const store={g(w,k){try{const v=(w=='l'?localStorage:sessionStorage).getItem(k);if(v!==null)return v}catch(e){}return SH.__m[w][k]??null},
+ s(w,k,v){try{(w=='l'?localStorage:sessionStorage).setItem(k,v)}catch(e){}SH.__m[w][k]=v},clr(){try{sessionStorage.clear()}catch(e){}SH.__m.s={}}};
+const K='rm_db',LANGS={fr:'Français',en:'English',ar:'العربية',es:'Español'};
+const TL={dash:'Tableau de bord',pos:'Caisse',hist:'Historique des ventes',orders:'Commandes',menu:'Carte / Menu',drivers:'Livreurs',settings:'Réglages',restos:'Restaurants',myorders:'Mes commandes',logout:'Déconnexion'};
+const T={en:{dash:'Dashboard',pos:'Cash register',hist:'Sales history',orders:'Orders',menu:'Menu',drivers:'Drivers',settings:'Settings',restos:'Restaurants',myorders:'My orders',logout:'Log out'},
+es:{dash:'Panel',pos:'Caja',hist:'Historial de ventas',orders:'Pedidos',menu:'Menú',drivers:'Repartidores',settings:'Ajustes',restos:'Restaurantes',myorders:'Mis pedidos',logout:'Salir'},
+ar:{dash:'لوحة القيادة',pos:'الصندوق',hist:'سجل المبيعات',orders:'الطلبات',menu:'القائمة',drivers:'السائقون',settings:'الإعدادات',restos:'المطاعم',myorders:'طلباتي',logout:'خروج'}};
+const lang=()=>store.g('l','lang')||'fr',t=k=>(T[lang()]||{})[k]||TL[k]||k;
+const TRS="Tableau de bord|Dashboard|Panel|لوحة القيادة\nCaisse|Cash register|Caja|الصندوق\nHistorique des ventes|Sales history|Historial de ventas|سجل المبيعات\nCommandes|Orders|Pedidos|الطلبات\nCarte / Menu|Menu|Menú|القائمة\nLivreurs|Drivers|Repartidores|السائقون\nRéglages|Settings|Ajustes|الإعدادات\nRestaurants|Restaurants|Restaurantes|المطاعم\nMes commandes|My orders|Mis pedidos|طلباتي\nDéconnexion|Log out|Salir|خروج\n● En ligne|● Online|● En línea|● متصل\n● Hors ligne — caisse active|● Offline — register active|● Sin conexión — caja activa|● غير متصل — الصندوق يعمل\nGérez votre restaurant, même sans connexion.|Manage your restaurant, even offline.|Gestiona tu restaurante, incluso sin conexión.|أدر مطعمك حتى بدون اتصال.\nSe connecter|Log in|Iniciar sesión|تسجيل الدخول\nCréer un compte|Create an account|Crear una cuenta|إنشاء حساب\nPremière configuration : compte propriétaire|First setup: owner account|Primera configuración: cuenta de propietario|الإعداد الأول: حساب المالك\nClient|Customer|Cliente|زبون\nRestaurant|Restaurant|Restaurante|مطعم\nCréer le compte|Create account|Crear cuenta|إنشاء الحساب\nCréer le compte propriétaire|Create owner account|Crear cuenta de propietario|إنشاء حساب المالك\nRetour|Back|Volver|رجوع\n← Retour|← Back|← Volver|→ رجوع\nTéléphone ou nom propriétaire|Phone or owner name|Teléfono o nombre del propietario|الهاتف أو اسم المالك\nMot de passe|Password|Contraseña|كلمة المرور\nConfirmez le mot de passe|Confirm password|Confirma la contraseña|أكّد كلمة المرور\nVotre nom|Your name|Tu nombre|اسمك\nNom du restaurant|Restaurant name|Nombre del restaurante|اسم المطعم\nNuméro de téléphone|Phone number|Número de teléfono|رقم الهاتف\nVotre nom de propriétaire|Your owner name|Tu nombre de propietario|اسم المالك\nCréez votre compte propriétaire (une seule fois).|Create your owner account (one time only).|Crea tu cuenta de propietario (una sola vez).|أنشئ حساب المالك (مرة واحدة فقط).\nIdentifiants incorrects.|Incorrect credentials.|Credenciales incorrectas.|بيانات الدخول غير صحيحة.\nTous les champs sont obligatoires.|All fields are required.|Todos los campos son obligatorios.|جميع الحقول مطلوبة.\nLes deux mots de passe ne sont pas identiques.|The two passwords do not match.|Las dos contraseñas no coinciden.|كلمتا المرور غير متطابقتين.\nCe numéro est déjà utilisé.|This number is already used.|Este número ya está en uso.|هذا الرقم مستخدم بالفعل.\nNom et mot de passe obligatoires.|Name and password required.|Nombre y contraseña obligatorios.|الاسم وكلمة المرور مطلوبان.\nDevise par défaut : FCFA (XOF). 1 mois d'essai gratuit.|Default currency: FCFA (XOF). 1 month free trial.|Moneda por defecto: FCFA (XOF). 1 mes de prueba gratuita.|العملة الافتراضية: فرنك CFA (XOF). شهر تجريبي مجاني.\nEspace propriétaire|Owner area|Área del propietario|مساحة المالك\nLien|Link|Enlace|الرابط\nTél.|Phone|Tel.|الهاتف\nStatut|Status|Estado|الحالة\nÉchéance|Due date|Vencimiento|الاستحقاق\nDevise|Currency|Moneda|العملة\nEssai gratuit|Free trial|Prueba gratuita|تجربة مجانية\nAbonné|Subscribed|Suscrito|مشترك\nSuspendu|Suspended|Suspendido|موقوف\nExpiré|Expired|Vencido|منتهي\nEssai terminé|Trial ended|Prueba terminada|انتهت التجربة\n+1 mois payé|+1 month paid|+1 mes pagado|+شهر مدفوع\nSuspendre|Suspend|Suspender|إيقاف\nSupprimer|Delete|Eliminar|حذف\nAucun restaurant inscrit pour l'instant.|No restaurant registered yet.|Ningún restaurante registrado todavía.|لا يوجد مطعم مسجل بعد.\nChiffre d'affaires total|Total revenue|Ingresos totales|إجمالي رقم الأعمال\nAujourd'hui|Today|Hoy|اليوم\nNombre de ventes|Number of sales|Número de ventas|عدد المبيعات\nPanier moyen|Average basket|Cesta media|متوسط السلة\nCA des 7 derniers jours|Revenue, last 7 days|Ingresos, últimos 7 días|رقم الأعمال خلال 7 أيام\nMeilleurs produits|Top products|Mejores productos|أفضل المنتجات\nAucune vente pour l'instant.|No sales yet.|Aún no hay ventas.|لا توجد مبيعات بعد.\nTicket|Receipt|Ticket|التذكرة\n(fonctionne hors connexion)|(works offline)|(funciona sin conexión)|(يعمل بدون اتصال)\nValider la vente et imprimer|Confirm sale and print|Validar venta e imprimir|تأكيد البيع والطباعة\nEspèces|Cash|Efectivo|نقدًا\nCarte|Card|Tarjeta|بطاقة\nAucune vente.|No sales.|Sin ventas.|لا توجد مبيعات.\nN°|No.|N.º|الرقم\nDate|Date|Fecha|التاريخ\nSource|Source|Origen|المصدر\nTotal|Total|Total|المجموع\nRéimprimer|Reprint|Reimprimir|إعادة الطباعة\ncaisse|register|caja|الصندوق\nen ligne|online|en línea|عبر الإنترنت\nAccepter|Accept|Aceptar|قبول\nRefuser|Decline|Rechazar|رفض\nMarquer préparée|Mark as prepared|Marcar como preparado|تحديد كمُجهّز\nLivreur…|Driver…|Repartidor…|السائق…\nAttribuer|Assign|Asignar|تعيين\nAnnulée par le client|Cancelled by the customer|Cancelado por el cliente|ألغاها الزبون\nAucune commande en ligne.|No online orders.|Sin pedidos en línea.|لا توجد طلبات عبر الإنترنت.\nNom du plat|Dish name|Nombre del plato|اسم الطبق\nPrix|Price|Precio|السعر\nAjouter|Add|Añadir|إضافة\nNom|Name|Nombre|الاسم\nTéléphone|Phone|Teléfono|الهاتف\nCréer le compte livreur|Create driver account|Crear cuenta de repartidor|إنشاء حساب سائق\nAucun livreur.|No drivers.|Sin repartidores.|لا يوجد سائقون.\nLogo|Logo|Logo|الشعار\nAdresse|Address|Dirección|العنوان\nLatitude|Latitude|Latitud|خط العرض\nLongitude|Longitude|Longitud|خط الطول\nMa position|My location|Mi ubicación|موقعي\nMoyens de paiement en ligne (séparés par des virgules)|Online payment methods (comma-separated)|Medios de pago en línea (separados por comas)|وسائل الدفع عبر الإنترنت (مفصولة بفواصل)\nEnregistrer|Save|Guardar|حفظ\nCarte de visite|Business card|Tarjeta de visita|بطاقة العمل\nImprimer|Print|Imprimir|طباعة\nRestaurant introuvable.|Restaurant not found.|Restaurante no encontrado.|المطعم غير موجود.\nActivez la localisation pour trier les restaurants par distance.|Enable location to sort restaurants by distance.|Activa la ubicación para ordenar por distancia.|فعّل الموقع لترتيب المطاعم حسب المسافة.\nVoir la carte|View menu|Ver la carta|عرض القائمة\nAucun restaurant disponible pour le moment.|No restaurant available right now.|Ningún restaurante disponible por ahora.|لا يوجد مطعم متاح حاليًا.\nAdresse de livraison|Delivery address|Dirección de entrega|عنوان التوصيل\nPaiement à la livraison|Pay on delivery|Pago contra entrega|الدفع عند التسليم\nCommander|Order|Pedir|اطلب\nAnnuler la commande|Cancel order|Cancelar pedido|إلغاء الطلب\nReçu PDF|PDF receipt|Recibo PDF|إيصال PDF\nAucune commande.|No orders.|Sin pedidos.|لا توجد طلبات.\nLivreur|Driver|Repartidor|السائق\nDémarrer la livraison|Start delivery|Iniciar entrega|بدء التوصيل\nLivraison terminée|Delivery completed|Entrega completada|اكتمل التوصيل\nEn préparation…|Being prepared…|En preparación…|قيد التحضير…\nAucune commande attribuée.|No assigned orders.|Sin pedidos asignados.|لا توجد طلبات معيّنة.\nen attente|pending|pendiente|قيد الانتظار\nacceptée|accepted|aceptado|مقبول\npréparée|prepared|preparado|مجهّز\nen route|on the way|en camino|في الطريق\nterminée|completed|completado|مكتمل\nrefusée|declined|rechazado|مرفوض\nannulée|cancelled|cancelado|ملغى\nCréer un compte pour votre restaurant|Create an account for your restaurant|Crea una cuenta para tu restaurante|أنشئ حسابًا لمطعمك\nCatalogue des plats|Dish catalogue|Catálogo de platos|كتالوج الأطباق\nNouveau plat|New dish|Nuevo plato|طبق جديد\nIngrédients et description|Ingredients and description|Ingredientes y descripción|المكونات والوصف\nPhotos du plat (une ou plusieurs)|Dish photos (one or more)|Fotos del plato (una o varias)|صور الطبق (واحدة أو أكثر)\nAjouter des photos|Add photos|Añadir fotos|إضافة صور\nModifier|Edit|Editar|تعديل\nAucun plat dans le catalogue.|No dishes in the catalogue.|Ningún plato en el catálogo.|لا توجد أطباق في الكتالوج.\nActiver Pro (+1 mois)|Activate Pro (+1 month)|Activar Pro (+1 mes)|تفعيل برو (+شهر)\nDésactiver le compte|Deactivate account|Desactivar la cuenta|تعطيل الحساب\nCompte désactivé|Account deactivated|Cuenta desactivada|الحساب معطّل\nPro actif|Pro active|Pro activo|برو مفعّل\nPro expiré|Pro expired|Pro vencido|انتهى برو\nDemande Pro|Pro request|Solicitud Pro|طلب برو\nActiver l'option Pro|Activate the Pro option|Activar la opción Pro|تفعيل خيار برو\nDemander l'activation Pro|Request Pro activation|Solicitar activación Pro|طلب تفعيل برو\nOption Pro|Pro option|Opción Pro|خيار برو\nVoir toute la carte|View full menu|Ver toda la carta|عرض القائمة كاملة\nRestaurants les plus proches de vous|Restaurants closest to you|Restaurantes más cercanos|أقرب المطاعم إليك\nMes tâches de livraison|My delivery tasks|Mis entregas|مهام التوصيل\nLivraisons terminées|Completed deliveries|Entregas completadas|التوصيلات المكتملة\nAucune tâche pour le moment.|No tasks right now.|Sin tareas por ahora.|لا توجد مهام حاليًا.\nCatalogue bientôt disponible.|Catalogue coming soon.|Catálogo próximamente.|الكتالوج قريبًا.";
+const TR={};TRS.split('\n').forEach(l=>{const[a,...r]=l.split('|');['en','es','ar'].forEach((k,i)=>{(TR[k]=TR[k]||{})[a]=r[i]})});
+function trs(s){const L=TR[lang()];if(!L)return s;const m=s.match(/^(\s*)([\s\S]*?)(\s*)$/),c=m[2];if(L[c])return m[1]+L[c]+m[3];const i=c.search(/ [:—] /);if(i>0&&L[c.slice(0,i)])return m[1]+L[c.slice(0,i)]+c.slice(i)+m[3];return s}
+function trDom(root){if(lang()=='fr')return;const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;while(n=w.nextNode()){if(n.parentNode.tagName=='SCRIPT')continue;const v=trs(n.nodeValue);if(v!==n.nodeValue)n.nodeValue=v}
+ root.querySelectorAll('[placeholder]').forEach(e=>{const v=trs(e.getAttribute('placeholder'));if(v!==e.getAttribute('placeholder'))e.setAttribute('placeholder',v)})}
+let _obs=null;function startTr(){if(_obs||lang()=='fr')return;const o=()=>_obs.observe(document.body,{childList:true,subtree:true,characterData:true});_obs=new MutationObserver(()=>{_obs.disconnect();trDom(document.body);o()});o();trDom(document.body)}
+const D={get(){let d=JSON.parse(store.g('l',K)||'null');if(!d){d={users:[],rests:[],orders:[]};store.s('l',K,JSON.stringify(d))}return d},save(d){store.s('l',K,JSON.stringify(d))}};
+const uid=()=>Math.random().toString(36).slice(2,9);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const me=()=>{const i=store.g('s','uid');return i&&D.get().users.find(u=>u.id==i)};
+const inShell=SH!==window;
+const navTo=u=>inShell?parent.nav(u):(location=u.replace(/\.html$/,'')+'.html');
+const cardUrl=s=>inShell?'#card/'+s:'card.html?r='+s;
+const cardSlug=()=>inShell?SH.location.hash.split('/')[1]:new URLSearchParams(location.search).get('r');
+const OWNER_ACCOUNT_NAME='Ayouba Tanko';
+const isOwnerAccount=u=>!!u&&String(u.name||'').trim().toLocaleLowerCase('fr')===OWNER_ACCOUNT_NAME.toLocaleLowerCase('fr');
+function guard(role){const u=me();const allowed=role==='owner'?(u&&(u.role==='owner'||(u.role==='restaurant'&&isOwnerAccount(u)))):(u&&u.role===role);if(!allowed){navTo('index');return null}return u}
+function logout(){store.clr();navTo('index')}
+const slugify=s=>s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+const money=(v,c)=>{if(!c||c=='XOF'||c=='XAF')return new Intl.NumberFormat(lang(),{maximumFractionDigits:0}).format(v)+' FCFA';try{return new Intl.NumberFormat(lang(),{style:'currency',currency:c||'XOF'}).format(v)}catch(e){return v+' '+c}};
+const currencies=()=>Intl.supportedValuesOf?Intl.supportedValuesOf('currency'):['EUR','USD','XOF','MAD','DZD','TND','GBP'];
+const fdate=ts=>new Date(ts).toLocaleString(lang());
+const km=(a,b)=>{const R=6371,r=x=>x*Math.PI/180,dl=r(b[0]-a[0]),dn=r(b[1]-a[1]);const h=Math.sin(dl/2)**2+Math.cos(r(a[0]))*Math.cos(r(b[0]))*Math.sin(dn/2)**2;return 2*R*Math.asin(Math.sqrt(h))};
+function setLang(k){store.s('l','lang',k);inShell?parent.nav(parent.cur):location.reload()}
+function hdr(title){document.getElementById('hdr').innerHTML=`<b>${esc(title)}</b><span class="row"><span id="net"></span><span class="lang">${Object.entries(LANGS).map(([k,v])=>`<button title="${v}" class="${k==lang()?'on':''}" onclick="setLang('${k}')">${k.toUpperCase()}</button>`).join('')}</span><button id="lo" onclick="logout()">${t('logout')}</button></span>`;document.documentElement.dir=lang()=='ar'?'rtl':'ltr';const nt=()=>{const e=document.getElementById('net');if(e){e.textContent=navigator.onLine?'● En ligne':'● Hors ligne — caisse active';e.className=navigator.onLine?'':'off'}};nt();addEventListener('online',nt);addEventListener('offline',nt);startTr()}
+function toast(m){const e=document.createElement('div');e.className='toast';e.textContent=m;document.body.appendChild(e);setTimeout(()=>e.remove(),4500);try{const c=new AudioContext(),o=c.createOscillator();o.connect(c.destination);o.frequency.value=880;o.start();setTimeout(()=>o.stop(),180)}catch(e){}}
+function setOrder(id,patch){const d=D.get(),o=d.orders.find(o=>o.id==id);Object.assign(o,patch);
+ if(patch.status=='terminée'){d.rests.find(r=>r.id==o.restId).sales.push({id:uid(),date:Date.now(),items:o.items,total:o.total,src:'en ligne'})}D.save(d)}
+function receipt(r,x,title){const items=x.items.map(i=>`<tr><td>${esc(i.n)} ×${i.q}</td><td style="text-align:end">${money(i.p*i.q,r.currency)}</td></tr>`).join('');
+ return `<div style="text-align:center">${r.logo?`<img src="${r.logo}" style="width:60px"><br>`:''}<b>${esc(r.name)}</b><br>${esc(r.address||'')}<br>${esc(r.phone||'')}<hr>${title||'Reçu'} #${esc(x.id)}<br>${fdate(x.date||x.created)}</div><table>${items}</table><hr><b>TOTAL : ${money(x.total,r.currency)}</b><br>${esc(x.pay||'')}<p style="text-align:center">Merci !</p>`}
+function printHTML(h){document.getElementById('receipt').innerHTML=h;setTimeout(()=>window.print(),150)}
+function barChart(data,cur){const m=Math.max(1,...data.map(d=>d.v)),w=300/data.length;
+ return `<svg viewBox="0 0 300 140" width="100%">${data.map((d,i)=>{const h=d.v/m*90;return `<rect x="${i*w+6}" y="${110-h}" width="${w-12}" height="${h}" fill="var(--acc)" rx="3"/><text x="${i*w+w/2}" y="${105-h}" font-size="7" text-anchor="middle" fill="currentColor">${Math.round(d.v)}</text><text x="${i*w+w/2}" y="124" font-size="7" text-anchor="middle" fill="currentColor">${esc(d.l)}</text>`}).join('')}</svg>`}
+
+const curOptions=sel=>['XOF',...currencies().filter(c=>c!='XOF')].map(c=>`<option value="${c}" ${c==(sel||'XOF')?'selected':''}>${c=='XOF'?'FCFA (XOF)':c=='XAF'?'FCFA (XAF)':c}</option>`).join('');
+const readImg=f=>new Promise(res=>{const fr=new FileReader();fr.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,640/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',.72))};im.onerror=()=>res(fr.result);im.src=fr.result};fr.readAsDataURL(f)});
+const gal=(imgs,i)=>imgs&&imgs.length?'<div class="gal">'+imgs.map((s,k)=>`<span class="gi"><img src="${s}" alt="">${i!=null?`<button class="x" onclick="delImg(${i},${k})">✕</button>`:''}</span>`).join('')+'</div>':'<div class="gal ph">🍽️</div>';
+
+function subInfo(r){const n=Date.now(),dl=e=>Math.max(0,Math.ceil((e-n)/864e5));
+ if(r.sub=='suspended')return{ok:false,state:'off',label:'Compte désactivé',end:r.subEnd||r.trialEnd,days:-1};
+ if(r.sub=='active')return r.subEnd>n?{ok:true,state:'pro',label:'Pro actif',end:r.subEnd,days:dl(r.subEnd)}:{ok:false,state:'off',label:'Pro expiré',end:r.subEnd,days:-1};
+ return r.trialEnd>n?{ok:true,state:'trial',label:'Essai gratuit',end:r.trialEnd,days:dl(r.trialEnd)}:{ok:false,state:'off',label:'Essai terminé',end:r.trialEnd,days:-1}}
+function notify(t,b){toast(t+(b?' — '+b:''));try{if(window.Notification&&Notification.permission=='granted')new Notification(t,{body:b||''})}catch(e){}}
+document.addEventListener('click',()=>{try{window.Notification&&Notification.permission=='default'&&Notification.requestPermission()}catch(e){}},{once:true});
+</script><script>
 const r=D.get().rests.find(r=>r.slug==cardSlug());
 c.innerHTML=r?`<div class="bizcard pcard">${r.logo?`<img src="${r.logo}" class="logo" style="width:90px;height:90px">`:''}<h2>${esc(r.name)}</h2><p>${esc(r.address||'')}</p><p>☎ ${esc(r.phone||'')}</p><p class="mut">${esc(r.slug)}</p></div>`:'<p class="card">Restaurant introuvable.</p>';
 if(r)document.title=r.name;
-</script></body></html>
+</script>
+<script>
+(()=> {
+ const BASE='./', KEY='restogest_seen_version';
+ let deferredInstall=null;
+ const banner=document.createElement('div');
+ banner.id='rg-update-banner';
+ banner.style.cssText='display:none;position:fixed;left:12px;right:12px;bottom:14px;z-index:99999;background:#14213d;color:white;padding:14px 16px;border-radius:16px;box-shadow:0 8px 30px #0005;font:14px/1.45 system-ui';
+ banner.innerHTML='<div style="font-weight:700;margin-bottom:5px" id="rg-update-title">Mise à jour disponible</div><div id="rg-update-msg" style="opacity:.9;margin-bottom:10px"></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button id="rg-update-now" style="background:#ffb703;color:#14213d;border:0;border-radius:9px;padding:10px 14px;font-weight:700">Mettre à jour</button><button id="rg-install" style="background:#fff;color:#14213d;border:0;border-radius:9px;padding:10px 14px;font-weight:700">Installer l’application</button><button id="rg-update-close" style="background:transparent;color:#fff;border:1px solid #ffffff66;border-radius:9px;padding:10px 12px">Plus tard</button></div>';
+ document.addEventListener('DOMContentLoaded',()=>{
+   document.body.appendChild(banner);
+   const install=document.getElementById('rg-install');
+   install.addEventListener('click',async()=>{
+     if(deferredInstall){deferredInstall.prompt();await deferredInstall.userChoice;deferredInstall=null;install.style.display='none'}
+     else alert('Pour installer : ouvrez le menu ⋮ de votre navigateur puis choisissez « Installer l’application » ou « Ajouter à l’écran d’accueil ».');
+   });
+   document.getElementById('rg-update-close').onclick=()=>banner.style.display='none';
+   document.getElementById('rg-update-now').onclick=async()=>{
+     try{if(navigator.serviceWorker){const reg=await navigator.serviceWorker.getRegistration();if(reg)await reg.update();if(reg&&reg.waiting)reg.waiting.postMessage({type:'SKIP_WAITING'})}}catch(e){}
+     location.reload(true);
+   };
+ });
+ addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;const b=document.getElementById('rg-install');if(b)b.style.display='inline-block';showBanner('Installer RestoGest','Installez l’application sur votre téléphone pour y accéder rapidement.')});
+ addEventListener('appinstalled',()=>{deferredInstall=null;const b=document.getElementById('rg-install');if(b)b.style.display='none'});
+ function showBanner(title,message){const t=document.getElementById('rg-update-title'),m=document.getElementById('rg-update-msg');if(t)t.textContent=title;if(m)m.textContent=message||'';if(banner)banner.style.display='block'}
+ async function checkVersion(){
+   try{
+    const r=await fetch('./version.json?ts='+Date.now(),{cache:'no-store'});if(!r.ok)return;
+    const data=await r.json();if(!data.version)return;
+    const seen=localStorage.getItem(KEY);
+    if(!seen){localStorage.setItem(KEY,data.version);return}
+    if(seen!==String(data.version)){showBanner('Nouvelle version RestoGest disponible',data.message||'Une mise à jour est disponible. Appuyez sur « Mettre à jour ».');}
+   }catch(e){}
+ }
+ checkVersion();setInterval(checkVersion,5*60*1000);
+ if('serviceWorker' in navigator && location.protocol.startsWith('http')){
+   navigator.serviceWorker.register('./sw.js').catch(()=>{});
+ }
+})();
+</script>
+</body></html>
