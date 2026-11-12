@@ -98,7 +98,7 @@ nav:empty{display:none;padding:0;border:0;height:0;overflow:hidden}
 .back-btn:hover{filter:brightness(1.1);transform:translateY(-1px)}
 </style></head><body>
 <div id="hdr"></div><main id="m"></main>
-<script src="db.js"></script>
+<script src="db.js"></script><script src="notif.js"></script>
 <script src="chat.js"></script>
 <script>let SH=window;try{if(window.parent!==window&&window.parent.nav)SH=window.parent}catch(e){}
 SH.__m=SH.__m||{l:{},s:{}};
@@ -166,7 +166,7 @@ function toast(m){const e=document.createElement('div');e.className='toast';e.te
 function setOrder(id,patch){const d=D.get(),o=d.orders.find(o=>o.id==id);Object.assign(o,patch);
  if(patch.status=='terminée'){d.rests.find(r=>r.id==o.restId).sales.push({id:uid(),date:Date.now(),items:o.items,total:o.total,src:'en ligne'})}D.save(d)}
 function receipt(r,x,title){const items=x.items.map(i=>`<tr><td>${esc(i.n)} ×${i.q}</td><td style="text-align:end">${money(i.p*i.q,r.currency)}</td></tr>`).join('');
- return `<div style="text-align:center">${r.logo?`<img src="${r.logo}" style="width:60px"><br>`:''}<b>${esc(r.name)}</b><br>${esc(r.address||'')}<br>${esc(r.phone||'')}<hr>${title||'Reçu'} #${esc(x.id)}<br>${fdate(x.date||x.created)}</div><table>${items}</table><hr><b>TOTAL : ${money(x.total,r.currency)}</b><br>${esc(x.pay||'')}<p style="text-align:center">Merci !</p>`}
+ return `<div style="text-align:center">${r.logo?`<img src="${r.logo}" style="width:60px"><br>`:''}<b>${esc(r.name)}</b><br>${esc(r.address||'')}<br>${esc(r.phone||'')}<hr>${title||'Reçu'} #${esc(x.id)}<br>${fdate(x.date||x.created)}</div><table>${items}</table>${x.deliveryFee?`<div>Livraison (${x.distKm} km) : ${money(x.deliveryFee,r.currency)}</div>`:''}<hr><b>TOTAL : ${money(x.total,r.currency)}</b><br>${esc(x.pay||'')}<p style="text-align:center">Merci !</p>`}
 function printHTML(h){document.getElementById('receipt').innerHTML=h;setTimeout(()=>window.print(),150)}
 function barChart(data,cur){const m=Math.max(1,...data.map(d=>d.v)),w=300/data.length;
  return `<svg viewBox="0 0 300 140" width="100%">${data.map((d,i)=>{const h=d.v/m*90;return `<rect x="${i*w+6}" y="${110-h}" width="${w-12}" height="${h}" fill="var(--acc)" rx="3"/><text x="${i*w+w/2}" y="${105-h}" font-size="7" text-anchor="middle" fill="currentColor">${Math.round(d.v)}</text><text x="${i*w+w/2}" y="124" font-size="7" text-anchor="middle" fill="currentColor">${esc(d.l)}</text>`}).join('')}</svg>`}

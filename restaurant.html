@@ -98,7 +98,7 @@ nav:empty{display:none;padding:0;border:0;height:0;overflow:hidden}
 .back-btn:hover{filter:brightness(1.1);transform:translateY(-1px)}
 </style></head><body>
 <div id="hdr"></div><nav id="nav"></nav><main id="m"></main><div id="receipt"></div>
-<script src="db.js"></script>
+<script src="db.js"></script><script src="notif.js"></script>
 <script src="chat.js"></script>
 <script src="charts.js"></script>
 <script src="qr.js"></script>
@@ -169,7 +169,7 @@ function toast(m){const e=document.createElement('div');e.className='toast';e.te
 function setOrder(id,patch){const d=D.get(),o=d.orders.find(o=>o.id==id);Object.assign(o,patch);
  if(patch.status=='terminée'){d.rests.find(r=>r.id==o.restId).sales.push({id:uid(),date:Date.now(),items:o.items,total:o.total,src:'en ligne'})}D.save(d)}
 function receipt(r,x,title){const items=x.items.map(i=>`<tr><td>${esc(i.n)} ×${i.q}</td><td style="text-align:end">${money(i.p*i.q,r.currency)}</td></tr>`).join('');
- return `<div style="text-align:center">${r.logo?`<img src="${r.logo}" style="width:60px"><br>`:''}<b>${esc(r.name)}</b><br>${esc(r.address||'')}<br>${esc(r.phone||'')}<hr>${title||'Reçu'} #${esc(x.id)}<br>${fdate(x.date||x.created)}</div><table>${items}</table><hr><b>TOTAL : ${money(x.total,r.currency)}</b><br>${esc(x.pay||'')}<p style="text-align:center">Merci !</p>`}
+ return `<div style="text-align:center">${r.logo?`<img src="${r.logo}" style="width:60px"><br>`:''}<b>${esc(r.name)}</b><br>${esc(r.address||'')}<br>${esc(r.phone||'')}<hr>${title||'Reçu'} #${esc(x.id)}<br>${fdate(x.date||x.created)}</div><table>${items}</table>${x.deliveryFee?`<div>Livraison (${x.distKm} km) : ${money(x.deliveryFee,r.currency)}</div>`:''}<hr><b>TOTAL : ${money(x.total,r.currency)}</b><br>${esc(x.pay||'')}<p style="text-align:center">Merci !</p>`}
 function printHTML(h){document.getElementById('receipt').innerHTML=h;setTimeout(()=>window.print(),150)}
 function barChart(data,cur){const m=Math.max(1,...data.map(d=>d.v)),w=300/data.length;
  return `<svg viewBox="0 0 300 140" width="100%">${data.map((d,i)=>{const h=d.v/m*90;return `<rect x="${i*w+6}" y="${110-h}" width="${w-12}" height="${h}" fill="var(--acc)" rx="3"/><text x="${i*w+w/2}" y="${105-h}" font-size="7" text-anchor="middle" fill="currentColor">${Math.round(d.v)}</text><text x="${i*w+w/2}" y="124" font-size="7" text-anchor="middle" fill="currentColor">${esc(d.l)}</text>`}).join('')}</svg>`}
@@ -338,7 +338,7 @@ pos(r){const tot=cart.reduce((a,i)=>a+i.p*i.q,0);
 hist(r){return `<div class="card" style="overflow:auto"><table><tr><th>N°</th><th>Date</th><th>Source</th><th>Total</th><th></th></tr>${[...r.sales].reverse().map(s=>`<tr><td>${s.id}</td><td>${fdate(s.date)}</td><td>${s.src||'caisse'}</td><td>${money(s.total,r.currency)}</td><td><button class="sec" onclick="reprint('${s.id}')">Réimprimer</button></td></tr>`).join('')||'<tr><td class="mut">Aucune vente.</td></tr>'}</table></div>`},
 orders(r){const d=D.get(),os=d.orders.filter(o=>o.restId==r.id).reverse(),drv=d.users.filter(u=>u.restId==r.id&&u.role=='driver');
  return os.map(o=>`<div class="card"><div class="row"><b>#${o.id}</b> <span class="badge" data-s="${o.status}">${o.status}</span> <span class="mut">${fdate(o.created)} — ${esc(o.clientName)} ${esc(o.clientPhone)}</span></div>
- <div>${o.items.map(i=>`${esc(i.n)} ×${i.q}`).join(', ')} — <b>${money(o.total,r.currency)}</b> (${esc(o.pay)})</div>
+ <div>${o.items.map(i=>`${esc(i.n)} ×${i.q}`).join(', ')} — <b>${money(o.total,r.currency)}</b> (${esc(o.pay)})</div>${o.deliveryFee?`<div class="mut">🛵 Livraison incluse : ${money(o.deliveryFee,r.currency)} (${o.distKm} km × ${money(o.kmPrice,r.currency)}/km)</div>`:''}
  <div class="mut">${esc(o.addr)}</div>
  ${o.cLat!=null&&o.cLng!=null?`<div class="row"><span class="mut">📍 GPS client : ${o.cLat.toFixed(5)}, ${o.cLng.toFixed(5)}</span> <a target="_blank" rel="noopener" href="https://www.google.com/maps?q=${o.cLat},${o.cLng}" style="font-weight:700">Ouvrir dans Google Maps</a></div>`:'<div class="mut">Position GPS non fournie</div>'}
  ${o.status=='annulée'?'<p style="color:var(--bad)">Annulée par le client</p>':''}
@@ -361,6 +361,7 @@ settings(r){const bar=[['rest','🍽️ Restaurant'],['pay','💳 Paiements'],['
 settingsMain(r){return `<div class="card col"><label>Nom<input id="sn" value="${esc(r.name)}" style="width:100%"></label>
  <div class="row">${r.logo?`<img src="${r.logo}" class="logo">`:''}<label>Logo <input type="file" id="sl" accept="image/*"></label></div>
  <label>Téléphone<input id="sp" value="${esc(r.phone)}" style="width:100%"></label><label>Adresse<input id="sa" value="${esc(r.address)}" style="width:100%"></label>
+ <div class="card" style="margin:0;padding:12px"><b>🛵 Tarif de livraison</b><label class="mut">Prix pour 1 kilomètre (${esc(r.currency||'XOF')})<input id="skm" type="number" min="0" step="any" value="${r.kmPrice??''}" placeholder="ex. 200" style="width:100%"></label><p class="mut">Le prix de livraison du client = distance (restaurant → client) × ce prix. Il est ajouté automatiquement à son panier.</p></div>
  <div class="card" style="margin:0;padding:12px;${r.lat!=null?'background:rgba(18,163,107,.1);border-inline-start:4px solid var(--ok)':'background:rgba(255,183,3,.12);border-inline-start:4px solid var(--gold)'}">
   <b>📍 Position exacte du restaurant (Google Maps)</b>
   <p class="mut" id="restPosMsg">${r.lat!=null?'Position enregistrée : '+Number(r.lat).toFixed(5)+', '+Number(r.lng).toFixed(5):'Aucune position enregistrée. Détectez-la pour apparaître aux clients les plus proches.'}</p>
@@ -403,7 +404,7 @@ function payCard(r){const l=payMethods(r).map(p=>`<div class="row" style="justif
  return `<div class="card col"><h3 style="margin:0">💳 Moyens de paiement en ligne</h3><p class="mut">Ajoutez autant de moyens de paiement que vous voulez (Orange Money, MTN MoMo, Wave, Moov, carte, PayPal…). Vos clients les voient et les choisissent à la commande.</p>${l}<hr><input id="pmName" placeholder="Nom (ex. Orange Money)"><input id="pmDet" placeholder="Numéro, lien de paiement ou instructions"><button type="button" onclick="addPay()">➕ Ajouter ce moyen de paiement</button></div>`}
 function addPay(){const n=pmName.value.trim();if(!n)return alert('Saisissez le nom du moyen de paiement.');upd(r=>{const l=payMethods(r).slice();if(l.some(x=>x.name.toLowerCase()==n.toLowerCase()))return;l.push({id:uid(),name:n,details:pmDet.value.trim()});r.payMethods=l;r.pay=l.map(x=>x.name)});render()}
 function delPay(id){upd(r=>{r.payMethods=payMethods(r).filter(x=>x.id!=id);r.pay=r.payMethods.map(x=>x.name)});render()}
-function saveS(){const f=sl.files[0],go=logo=>{upd(r=>{r.name=sn.value;r.phone=sp.value;r.address=sa.value;r.currency=sc.value;r.lat=la.value?+la.value:null;r.lng=ln.value?+ln.value:null;if(logo)r.logo=logo});render()};
+function saveS(){const f=sl.files[0],go=logo=>{upd(r=>{r.name=sn.value;r.phone=sp.value;r.address=sa.value;r.currency=sc.value;r.lat=la.value?+la.value:null;r.lng=ln.value?+ln.value:null;r.kmPrice=(typeof skm!=='undefined'&&skm.value!=='')?Math.max(0,+skm.value):null;if(logo)r.logo=logo});render()};
  if(f){const fr=new FileReader();fr.onload=()=>go(fr.result);fr.readAsDataURL(f)}else go()}
 let pendN=-1;
 setInterval(()=>{const r=R();if(!r)return;const os=D.get().orders.filter(o=>o.restId==U.restId),cur=Object.fromEntries(os.map(o=>[o.id,o.status])),pend=os.filter(o=>o.status=='en attente').length;

@@ -98,11 +98,11 @@ nav:empty{display:none;padding:0;border:0;height:0;overflow:hidden}
 .back-btn:hover{filter:brightness(1.1);transform:translateY(-1px)}
 </style></head><body>
 <div id="hdr"></div>
-<main><div class="card col" style="max-width:420px;margin:30px auto">
+<main><div id="apkSlot" style="max-width:420px;margin:12px auto 0"></div><div class="card col" style="max-width:420px;margin:30px auto">
 <h2 class="brand" style="font-size:23px;line-height:1.25">🍽️ Gestion Multiples<br>de <span>Restaurant</span></h2><div class="mut">Gérez votre restaurant, même sans connexion.</div>
 <div class="row" id="tabs"></div><div id="f" class="col"></div><div id="msg" style="color:var(--bad)"></div>
 </div></main>
-<script src="db.js"></script>
+<script src="db.js"></script><script src="notif.js"></script>
 <script>let SH=window;try{if(window.parent!==window&&window.parent.nav)SH=window.parent}catch(e){}
 SH.__m=SH.__m||{l:{},s:{}};
 const store={g(w,k){try{const v=(w=='l'?localStorage:sessionStorage).getItem(k);if(v!==null)return v}catch(e){}return SH.__m[w][k]??null},

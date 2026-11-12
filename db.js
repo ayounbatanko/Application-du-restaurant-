@@ -96,7 +96,8 @@ var D={
 
 /* Synchronisation périodique : récupère les changements des autres téléphones */
 function poll(){
-  if(document.hidden||pending>0)return;
+  if(pending>0)return;
+  if(document.hidden){if(Date.now()-(poll.t||0)<15000)return}poll.t=Date.now();
   if(retry.length){var q=retry.splice(0);q.forEach(function(a){send.apply(null,a)});return}
   var v=ver;
   Promise.all(T.map(function(t){
