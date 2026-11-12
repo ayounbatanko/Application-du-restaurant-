@@ -1,24 +1,41 @@
 {
-  "name": "RestoGest",
-  "short_name": "RestoGest",
-  "description": "Gestion de restaurant, commandes et livraisons",
+  "id": "./",
+  "name": "Gestion Multiples de Restaurant",
+  "short_name": "GMR Restaurant",
+  "description": "Gérez plusieurs restaurants, les commandes en ligne, les livraisons et le chiffre d'affaires depuis une seule application.",
   "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "background_color": "#14213d",
   "theme_color": "#14213d",
   "lang": "fr",
+  "dir": "ltr",
+  "categories": ["business", "food", "productivity"],
   "icons": [
     {
       "src": "icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

@@ -2,9 +2,9 @@
 (function(){
 var URL='https://azfunhfjmybekzakhtbu.supabase.co';
 var KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF6ZnVuaGZqbXliZWt6YWtodGJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ0Njg1MTYsImV4cCI6MjExMDA0NDUxNn0.Dz_8eSYVUfSqZQ3rA93FPclg1_zc8kdlyUxNkcDJ_0I';
-var T=['users','rests','orders'],TB={users:'rg_users',rests:'rg_rests',orders:'rg_orders'},LS='rm_db';
+var T=['users','rests','orders','messages'],TB={users:'rg_users',rests:'rg_rests',orders:'rg_orders',messages:'rg_messages'},LS='rm_db';
 var H={apikey:KEY,Authorization:'Bearer '+KEY,'Content-Type':'application/json'};
-var cache={users:[],rests:[],orders:[]},snap={users:{},rests:{},orders:{}},pending=0,ver=0,online=false;
+var cache={users:[],rests:[],orders:[],messages:[]},snap={users:{},rests:{},orders:{},messages:{}},pending=0,ver=0,online=false;
 
 function clone(o){return JSON.parse(JSON.stringify(o))}
 function rebuild(){T.forEach(function(t){snap[t]={};cache[t].forEach(function(x){if(x&&x.id!=null)snap[t][x.id]=JSON.stringify(x)})})}
@@ -13,22 +13,23 @@ function rows(txt){return JSON.parse(txt).map(function(r){return r.data})}
 
 /* Chargement initial synchrone : les pages démarrent avec les vraies données */
 function loadSync(){
-  var out={},ok=true;
+  var out={},okCount=0;
   T.forEach(function(t){
     try{
       var x=new XMLHttpRequest();x.open('GET',URL+'/rest/v1/'+TB[t]+'?select=data&order=seq.asc',false);
       for(var k in H)x.setRequestHeader(k,H[k]);x.send();
-      if(x.status!==200)throw 0;out[t]=rows(x.responseText);
-    }catch(e){ok=false}
+      if(x.status!==200)throw 0;out[t]=rows(x.responseText);okCount++;
+    }catch(e){out[t]=[]}
   });
-  if(ok){cache=out;online=true}
+  if(okCount>0){cache=out;online=true;
+    try{var l=JSON.parse(localStorage.getItem(LS)||'null');if(l)T.forEach(function(t){if(!cache[t].length&&l[t])cache[t]=l[t]})}catch(e){}}
   else{try{var l=JSON.parse(localStorage.getItem(LS)||'null');if(l)T.forEach(function(t){cache[t]=l[t]||[]})}catch(e){}}
   rebuild();
   /* Migration : si la base est vide et que ce téléphone a des anciennes données locales, on les envoie une fois */
-  if(ok&&!T.some(function(t){return cache[t].length})){
+  if(okCount>0&&!T.some(function(t){return cache[t].length})){
     try{var o=JSON.parse(localStorage.getItem(LS)||'null');
       if(o&&T.some(function(t){return (o[t]||[]).length})){T.forEach(function(t){cache[t]=o[t]||[]});
-        var b={users:{},rests:{},orders:{}};D.save(Object.assign(clone(cache),{}),b)}}catch(e){}
+        var b={users:{},rests:{},orders:{},messages:{}};D.save(Object.assign(clone(cache),{}),b)}}catch(e){}
   }
 }
 

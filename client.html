@@ -1,4 +1,8 @@
-<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Client</title><style>:root{--bg:#f4f5f9;--card:#fff;--ink:#16213e;--mut:#6a7390;--bd:#e3e6ef;--navy:#14213d;--navy2:#26417a;--gold:#ffb703;--gold2:#fb8500;--ok:#12a36b;--bad:#e5383b;--acc:#fb8500;--kpi:#26417a;--sh:0 6px 22px rgba(20,33,61,.08)}
+<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Client — Gestion Multiples de Restaurant</title>
+<meta name="theme-color" content="#14213d">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>:root{--bg:#f4f5f9;--card:#fff;--ink:#16213e;--mut:#6a7390;--bd:#e3e6ef;--navy:#14213d;--navy2:#26417a;--gold:#ffb703;--gold2:#fb8500;--ok:#12a36b;--bad:#e5383b;--acc:#fb8500;--kpi:#26417a;--sh:0 6px 22px rgba(20,33,61,.08)}
 @media(prefers-color-scheme:dark){:root{--bg:#0d1325;--card:#161f38;--ink:#eef1fb;--mut:#93a0c4;--bd:#27345a;--kpi:#ffc93c;--sh:0 6px 22px rgba(0,0,0,.35)}}
 *{box-sizing:border-box}
 body{margin:0;font:15px/1.55 "Segoe UI",system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--ink)}
@@ -200,7 +204,24 @@ if(navigator.geolocation){
   );
 }
 const ST=['en attente','acceptée','préparée','colis récupéré','en route','arrivé','terminée'];
-function render(){hdr(U.name);nav.innerHTML=['restos','myorders','account'].map(k=>`<button class="${k==tab?'on':''}" onclick="tab='${k}';cur=null;menuQ='';render()">${t(k)}</button>`).join('');m.innerHTML=tab=='account'?passwordCard():(tab=='restos'?(cur?menu():list()):orders())}
+function render(){hdr(U.name);nav.innerHTML=['restos','myorders','support','account'].map(k=>`<button class="${k==tab?'on':''}" onclick="tab='${k}';cur=null;menuQ='';render()">${k==='support'?'💬 Support':t(k)}</button>`).join('');m.innerHTML=tab=='account'?passwordCard():(tab=='support'?clientChat():(tab=='restos'?(cur?menu():list()):orders()))}
+function clientChat(){
+ const d=D.get();const msgs=(d.messages||[]).filter(m=>(m.from===U.id||m.to===U.id)).sort((a,b)=>(a.ts||0)-(b.ts||0));
+ return `<div class="card col"><h3 style="margin:0">💬 Support propriétaire</h3>
+  <p class="mut">Écrivez au propriétaire en cas de problème avec une commande ou votre compte.</p>
+  <div id="cThread" style="max-height:340px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:8px 0">
+   ${msgs.map(m=>{const mine=m.from===U.id;return `<div style="align-self:${mine?'flex-end':'flex-start'};max-width:85%;background:${mine?'linear-gradient(135deg,#14213d,#26417a)':'var(--bd)'};color:${mine?'#fff':'var(--ink)'};padding:10px 14px;border-radius:14px;font-size:14px"><div>${esc(m.text||'')}</div><div class="mut" style="font-size:11px;margin-top:4px;opacity:.8">${fdate(m.ts)}</div></div>`}).join('')||'<p class="mut">Aucun message. Posez votre question ci-dessous.</p>'}
+  </div>
+  <div class="row"><input id="cMsg" class="g" placeholder="Votre message…" onkeydown="if(event.key==='Enter')sendClientChat()"><button type="button" onclick="sendClientChat()">Envoyer</button></div>
+ </div>`;
+}
+function sendClientChat(){
+ const text=(document.getElementById('cMsg')?.value||'').trim();if(!text)return;
+ const d=D.get();if(!d.messages)d.messages=[];
+ d.messages.push({id:uid(),from:U.id,fromName:U.name,to:'owner',text,ts:Date.now()});
+ D.save(d);document.getElementById('cMsg').value='';render();
+ setTimeout(()=>{const t=document.getElementById('cThread');if(t)t.scrollTop=t.scrollHeight},50);
+}
 function dist(d){return d==null?'':d<1?' — '+Math.round(d*1000)+' m':' — '+d.toFixed(1)+' km'}
 function list(){let rs=D.get().rests.filter(r=>subInfo(r).ok);
  rs=rs.map(r=>({r,d:pos&&r.lat!=null&&r.lng!=null?km(pos,[r.lat,r.lng]):null})).sort((a,b)=>(a.d??1e9)-(b.d??1e9));
@@ -245,8 +266,9 @@ function renderDishes(r,dishes){
  return dishes.map((p,idx)=>{
   const key=p.n;
   const qty=cart[key]||0;
+  const safeKey=encodeURIComponent(key);
   return `<div class="card">${gal(p.imgs)}<div class="row"><div class="g"><b>${esc(p.n)}</b><div class="mut">${esc(p.desc||'')}</div><b style="color:var(--acc)">${money(p.p,r.currency)}</b></div>
-  <div class="qty-row"><button class="sec" type="button" onclick="qByName(${JSON.stringify(key)},-1)">−</button><span>${qty}</span><button type="button" onclick="qByName(${JSON.stringify(key)},1)">+</button></div></div></div>`}).join('')}
+  <div class="qty-row"><button class="sec" type="button" data-act="qty" data-n="${safeKey}" data-v="-1">−</button><span>${qty}</span><button type="button" data-act="qty" data-n="${safeKey}" data-v="1">+</button></div></div></div>`}).join('')}
 function renderMenuOnly(){
  const r=D.get().rests.find(r=>r.id==cur);if(!r)return;
  const q=(menuQ||'').trim().toLowerCase();
@@ -272,6 +294,14 @@ function capturePos(done){
   {enableHighAccuracy:true,timeout:20000,maximumAge:0}
  )}
 function qByName(n,v){cart[n]=Math.max(0,(cart[n]||0)+v);if(!cart[n])delete cart[n];render()}
+document.addEventListener('click',function(e){
+  const btn=e.target.closest('[data-act="qty"]');
+  if(!btn)return;
+  e.preventDefault();
+  const n=decodeURIComponent(btn.getAttribute('data-n')||'');
+  const v=+(btn.getAttribute('data-v')||0);
+  if(n)qByName(n,v);
+});
 function order(){
  const r=D.get().rests.find(r=>r.id==cur);
  const items=(r?.menu||[]).filter(p=>cart[p.n]>0).map(p=>({n:p.n,p:p.p,q:cart[p.n]}));

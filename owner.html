@@ -1,4 +1,8 @@
-<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Propriétaire</title><style>:root{--bg:#f4f5f9;--card:#fff;--ink:#16213e;--mut:#6a7390;--bd:#e3e6ef;--navy:#14213d;--navy2:#26417a;--gold:#ffb703;--gold2:#fb8500;--ok:#12a36b;--bad:#e5383b;--acc:#fb8500;--kpi:#26417a;--sh:0 6px 22px rgba(20,33,61,.08)}
+<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Propriétaire — Gestion Multiples de Restaurant</title>
+<meta name="theme-color" content="#14213d">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>:root{--bg:#f4f5f9;--card:#fff;--ink:#16213e;--mut:#6a7390;--bd:#e3e6ef;--navy:#14213d;--navy2:#26417a;--gold:#ffb703;--gold2:#fb8500;--ok:#12a36b;--bad:#e5383b;--acc:#fb8500;--kpi:#26417a;--sh:0 6px 22px rgba(20,33,61,.08)}
 @media(prefers-color-scheme:dark){:root{--bg:#0d1325;--card:#161f38;--ink:#eef1fb;--mut:#93a0c4;--bd:#27345a;--kpi:#ffc93c;--sh:0 6px 22px rgba(0,0,0,.35)}}
 *{box-sizing:border-box}
 body{margin:0;font:15px/1.55 "Segoe UI",system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--ink)}
@@ -183,7 +187,7 @@ function subInfo(r){const n=Date.now(),dl=e=>Math.max(0,Math.ceil((e-n)/864e5));
 function notify(t,b){toast(t+(b?' — '+b:''));try{if(window.Notification&&Notification.permission=='granted')new Notification(t,{body:b||''})}catch(e){}}
 document.addEventListener('click',()=>{try{window.Notification&&Notification.permission=='default'&&Notification.requestPermission()}catch(e){}},{once:true});
 </script><script>
-guard('owner');hdr('Espace propriétaire — '+me().name);let reqN=-1,lastSig='',view='home';
+guard('owner');hdr('Gestion Multiples de Restaurant — '+me().name);let reqN=-1,lastSig='',view='home';
 function ensurePay(){const d=D.get();if(!d.ownerPay)d.ownerPay={methods:[],defaultCurrency:'XOF',plans:{1:10000,3:27000,6:50000,12:90000}};
  if(!d.ownerPay.plans)d.ownerPay.plans={1:d.ownerPay.defaultAmount||10000,3:(d.ownerPay.defaultAmount||10000)*3,6:(d.ownerPay.defaultAmount||10000)*6,12:(d.ownerPay.defaultAmount||10000)*12};
  return d}
@@ -249,8 +253,8 @@ function dataSig(){const d=ensurePay();return JSON.stringify({
  n:d.rests.length,c:d.users.filter(u=>u.role=='client').length,o:d.orders.length,pay:d.ownerPay,
  r:d.rests.map(r=>({id:r.id,name:r.name,phone:r.phone,sub:r.sub,subEnd:r.subEnd,pro:r.proRequest,plan:r.proPlanMonths,form:r.proForm,payment:r.proPayment,cur:r.currency,slug:r.slug}))
 })}
-var oTab='dash';
-function ownerBar(){return `<div class="row" style="gap:8px;flex-wrap:wrap;margin-bottom:10px">`+[['dash','📊 Tableau de bord'],['acc','🔑 Paramètres du compte']].map(([k,l])=>`<button type="button" class="${oTab==k?'':'sec'}" onclick="oTab='${k}';render(true)">${l}</button>`).join('')+`</div>`}
+var oTab='dash',chatPeer=null,reportFrom='',reportTo='';
+function ownerBar(){return `<div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:12px">`+[['dash','📊 Tableau'],['users','👥 Utilisateurs'],['clients','➕ Clients'],['chat','💬 Chat'],['reports','📈 Rapports CA'],['acc','🔑 Compte']].map(([k,l])=>`<button type="button" class="${oTab==k?'':'sec'}" onclick="oTab='${k}';chatPeer=null;render(true)">${l}</button>`).join('')+`</div>`}
 function render(force){
  const sig=dataSig();
  if(!force && sig===lastSig)return;
@@ -332,13 +336,156 @@ function render(force){
   </div>`;
  }).join('')||'<p class="mut">Aucun restaurant inscrit pour l\'instant.</p>';
 
- m.innerHTML=ownerBar()+(oTab=='acc'?passwordCard():`<div class="card"><div class="kpi">${d.rests.length}</div><div class="mut">restaurants partenaires — ${d.users.filter(u=>u.role=='client').length} clients — ${d.orders.length} commandes en ligne</div>
+ let content='';
+ if(oTab==='acc'){content=passwordCard()}
+ else if(oTab==='users'){content=usersPanel(d)}
+ else if(oTab==='clients'){content=clientsPanel(d)}
+ else if(oTab==='chat'){content=chatPanel(d)}
+ else if(oTab==='reports'){content=reportsPanel(d)}
+ else{content=`<div class="card"><div class="kpi">${d.rests.length}</div><div class="mut">restaurants partenaires — ${d.users.filter(u=>u.role=='client').length} clients — ${d.orders.length} commandes en ligne</div>
   ${pending.length?`<p><b>${pending.length}</b> dossier(s) Pro en cours (demande ou paiement à vérifier).</p>`:''}</div>
  ${payCfg}
  <h3>Restaurants & abonnements Pro</h3>
- ${cards}`);
+ ${cards}`}
+ m.innerHTML=ownerBar()+content;
  requestAnimationFrame(()=>{window.scrollTo(0,y)});
 }
+function usersPanel(d){
+ const list=d.users.slice().sort((a,b)=>(a.role||'').localeCompare(b.role||'')|| (a.name||'').localeCompare(b.name||''));
+ const rows=list.map(u=>{
+  const passDisp=u.pass!=null?esc(String(u.pass)):(u.passHash?'🔒 (hashé)':'—');
+  const roleBadge=u.role==='owner'?'👑 Propriétaire':u.role==='restaurant'?'🍽️ Restaurant':u.role==='driver'?'🚗 Livreur':'👤 Client';
+  return `<tr><td><b>${esc(u.name||'—')}</b><div class="mut">${esc(u.phone||'')}</div></td><td>${roleBadge}</td><td style="font-family:monospace;font-size:13px">${passDisp}</td><td><button class="sec" onclick="startChat('${u.id}')">💬 Chat</button></td></tr>`;
+ }).join('')||'<tr><td colspan="4" class="mut">Aucun utilisateur.</td></tr>';
+ return `<div class="card"><h3 style="margin:0">👥 Tous les utilisateurs</h3>
+  <p class="mut">Liste des comptes inscrits (numéro + mot de passe si stocké en clair). Les comptes récents utilisent un hash : le mot de passe n'est plus lisible.</p>
+  <div style="overflow-x:auto"><table><thead><tr><th>Nom / Téléphone</th><th>Rôle</th><th>Mot de passe</th><th></th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+}
+function clientsPanel(d){
+ return `<div class="card col"><h3 style="margin:0">➕ Créer un client</h3>
+  <p class="mut">Ajoutez un client directement dans la base avec son numéro de téléphone. Il pourra se connecter avec ce numéro et le mot de passe défini.</p>
+  <input id="cName" placeholder="Nom du client">
+  <input id="cPhone" placeholder="Numéro de téléphone" inputmode="tel">
+  <input id="cPass" type="password" placeholder="Mot de passe (min. 6 caractères)">
+  <button type="button" onclick="createClient()">Créer le client</button></div>
+  <div class="card"><h3>Clients existants</h3>
+  ${d.users.filter(u=>u.role==='client').map(u=>`<div class="row"><div class="g"><b>${esc(u.name)}</b><div class="mut">${esc(u.phone||'')}</div></div><button class="sec" onclick="startChat('${u.id}')">💬</button></div>`).join('')||'<p class="mut">Aucun client pour le moment.</p>'}</div>`;
+}
+function createClient(){
+ const name=(document.getElementById('cName')?.value||'').trim();
+ const phone=(document.getElementById('cPhone')?.value||'').trim();
+ const pass=(document.getElementById('cPass')?.value||'');
+ if(!name||!phone)return alert('Nom et numéro de téléphone obligatoires.');
+ if(pass.length<6)return alert('Mot de passe d\'au moins 6 caractères.');
+ const d=D.get();
+ if(d.users.some(u=>u.phone===phone||(u.name&&u.name.toLowerCase()===name.toLowerCase())))return alert('Ce numéro ou ce nom est déjà utilisé.');
+ d.users.push({id:uid(),role:'client',name,phone,pass,created:Date.now()});
+ D.save(d);toast('Client créé : '+name);render(true);
+}
+function startChat(uid){chatPeer=uid;oTab='chat';render(true)}
+function chatPanel(d){
+ const msgs=(d.messages||[]).slice().sort((a,b)=>(a.ts||0)-(b.ts||0));
+ const peers=new Map();
+ d.users.filter(u=>u.role!=='owner').forEach(u=>peers.set(u.id,{id:u.id,name:u.name,phone:u.phone,role:u.role}));
+ msgs.forEach(m=>{if(m.from&&!peers.has(m.from))peers.set(m.from,{id:m.from,name:m.fromName||'Inconnu',phone:'',role:''});if(m.to&&m.to!=='owner'&&!peers.has(m.to))peers.set(m.to,{id:m.to,name:m.toName||'Inconnu',phone:'',role:''})});
+ const peerList=[...peers.values()].sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+ const meId=me()?.id;
+ let convHtml='';
+ if(chatPeer){
+  const peer=peers.get(chatPeer)||{name:'Utilisateur',id:chatPeer};
+  const thread=msgs.filter(m=>(m.from===chatPeer&&m.to==='owner')||(m.from===meId&&m.to===chatPeer)||(m.from==='owner'&&m.to===chatPeer));
+  convHtml=`<div class="card col" style="min-height:320px">
+   <div class="row"><button class="sec" onclick="chatPeer=null;render(true)">← Retour</button><b class="g">💬 ${esc(peer.name)} ${peer.phone?'· '+esc(peer.phone):''}</b></div>
+   <div id="chatThread" style="flex:1;max-height:360px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:8px 0">
+    ${thread.map(m=>{
+      const mine=m.from===meId||m.from==='owner';
+      return `<div style="align-self:${mine?'flex-end':'flex-start'};max-width:85%;background:${mine?'linear-gradient(135deg,#14213d,#26417a)':'var(--bd)'};color:${mine?'#fff':'var(--ink)'};padding:10px 14px;border-radius:14px;font-size:14px"><div>${esc(m.text||'')}</div><div class="mut" style="font-size:11px;margin-top:4px;opacity:.8">${fdate(m.ts)}</div></div>`;
+    }).join('')||'<p class="mut">Aucun message. Écrivez le premier.</p>'}
+   </div>
+   <div class="row"><input id="chatMsg" class="g" placeholder="Votre message…" onkeydown="if(event.key==='Enter')sendChat()"><button type="button" onclick="sendChat()">Envoyer</button></div>
+  </div>`;
+ }else{
+  convHtml=`<div class="card"><p class="mut">Sélectionnez un utilisateur pour démarrer ou poursuivre une conversation.</p></div>`;
+ }
+ return `<div class="card"><h3 style="margin:0">💬 Canal de support</h3>
+  <p class="mut">Échangez avec les utilisateurs en cas de problème. Les messages sont synchronisés via la base partagée.</p></div>
+  <div class="row" style="align-items:flex-start;gap:12px;flex-wrap:wrap">
+   <div class="card" style="min-width:220px;flex:0 0 240px"><b>Contacts</b>
+    ${peerList.map(p=>`<div class="row" style="margin-top:8px;cursor:pointer;padding:6px;border-radius:10px;${chatPeer===p.id?'background:rgba(255,183,3,.15)':''}" onclick="startChat('${p.id}')"><div class="g"><b>${esc(p.name)}</b><div class="mut">${esc(p.phone||'')} · ${esc(p.role||'')}</div></div></div>`).join('')||'<p class="mut">Aucun utilisateur.</p>'}
+   </div>
+   <div class="g">${convHtml}</div>
+  </div>`;
+}
+function sendChat(){
+ const text=(document.getElementById('chatMsg')?.value||'').trim();
+ if(!text||!chatPeer)return;
+ const d=D.get();
+ if(!d.messages)d.messages=[];
+ const u=me();
+ d.messages.push({id:uid(),from:u?.id||'owner',fromName:u?.name||'Propriétaire',to:chatPeer,text,ts:Date.now()});
+ D.save(d);
+ document.getElementById('chatMsg').value='';
+ render(true);
+ setTimeout(()=>{const t=document.getElementById('chatThread');if(t)t.scrollTop=t.scrollHeight},50);
+}
+function reportsPanel(d){
+ const now=Date.now();
+ const fromVal=reportFrom||new Date(now-30*864e5).toISOString().slice(0,10);
+ const toVal=reportTo||new Date(now).toISOString().slice(0,10);
+ const fromTs=new Date(fromVal+'T00:00:00').getTime();
+ const toTs=new Date(toVal+'T23:59:59').getTime();
+ // Aggregate CA from online orders + restaurant sales
+ let totalCA=0,byDay={},byRest={},orderCount=0;
+ d.orders.forEach(o=>{
+  const t=o.created||o.date||0;
+  if(t<fromTs||t>toTs)return;
+  if(o.status==='refusée'||o.status==='annulée')return;
+  totalCA+=+(o.total||0);orderCount++;
+  const day=new Date(t).toISOString().slice(0,10);
+  byDay[day]=(byDay[day]||0)+(+o.total||0);
+  const r=d.rests.find(x=>x.id===o.restId);
+  const rn=r?r.name:o.restId;
+  byRest[rn]=(byRest[rn]||0)+(+o.total||0);
+ });
+ d.rests.forEach(r=>{
+  (r.sales||[]).forEach(s=>{
+   const t=s.date||0;if(t<fromTs||t>toTs)return;
+   totalCA+=+(s.total||0);orderCount++;
+   const day=new Date(t).toISOString().slice(0,10);
+   byDay[day]=(byDay[day]||0)+(+s.total||0);
+   byRest[r.name]=(byRest[r.name]||0)+(+s.total||0);
+  });
+ });
+ const days=Object.keys(byDay).sort();
+ const chartData=days.map(l=>({l:l.slice(5),v:byDay[l]}));
+ const restRows=Object.entries(byRest).sort((a,b)=>b[1]-a[1]).map(([n,v])=>`<tr><td>${esc(n)}</td><td style="text-align:end"><b>${money(v,'XOF')}</b></td></tr>`).join('')||'<tr><td colspan="2" class="mut">Aucune donnée.</td></tr>';
+ return `<div class="card col" id="reportPrintArea">
+  <h3 style="margin:0">📈 Rapport du chiffre d'affaires</h3>
+  <p class="mut">Sélectionnez une période puis imprimez ou exportez le rapport.</p>
+  <div class="row">
+   <label class="g">Du <input type="date" id="repFrom" value="${fromVal}" onchange="reportFrom=this.value;render(true)"></label>
+   <label class="g">Au <input type="date" id="repTo" value="${toVal}" onchange="reportTo=this.value;render(true)"></label>
+   <button type="button" onclick="printReport()">🖨️ Imprimer le rapport</button>
+  </div>
+  <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin:12px 0">
+   <div class="card" style="margin:0;border-inline-start:6px solid var(--gold)"><div class="kpi" style="font-size:24px">${money(totalCA,'XOF')}</div><div class="mut">Chiffre d'affaires</div></div>
+   <div class="card" style="margin:0;border-inline-start:6px solid var(--ok)"><div class="kpi" style="font-size:24px">${orderCount}</div><div class="mut">Commandes / ventes</div></div>
+   <div class="card" style="margin:0;border-inline-start:6px solid var(--navy2)"><div class="kpi" style="font-size:24px">${Object.keys(byRest).length}</div><div class="mut">Restaurants actifs</div></div>
+  </div>
+  <h4>Évolution journalière</h4>
+  ${chartData.length?barChart(chartData,'XOF'):'<p class="mut">Pas de données sur cette période.</p>'}
+  <h4>Par restaurant</h4>
+  <table><thead><tr><th>Restaurant</th><th style="text-align:end">CA</th></tr></thead><tbody>${restRows}</tbody></table>
+  <p class="mut" style="margin-top:12px">Période : ${fromVal} → ${toVal} · Généré le ${new Date().toLocaleString('fr-FR')}</p>
+ </div>`;
+}
+function printReport(){
+ const area=document.getElementById('reportPrintArea');
+ if(!area)return;
+ const h=`<div class="pcard" style="padding:20px;font-family:system-ui">${area.innerHTML}</div>`;
+ printHTML(h);
+}
+
 render(true);
 setInterval(()=>render(false),3000);
 function releasePanel(){

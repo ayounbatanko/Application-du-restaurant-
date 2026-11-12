@@ -1,4 +1,16 @@
-<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>RestoGest</title><style>:root{--bg:#f4f5f9;--card:#fff;--ink:#16213e;--mut:#6a7390;--bd:#e3e6ef;--navy:#14213d;--navy2:#26417a;--gold:#ffb703;--gold2:#fb8500;--ok:#12a36b;--bad:#e5383b;--acc:#fb8500;--kpi:#26417a;--sh:0 6px 22px rgba(20,33,61,.08)}
+<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Gestion Multiples de Restaurant</title>
+<meta name="description" content="Gérez plusieurs restaurants, les commandes en ligne, les livraisons et le chiffre d'affaires depuis une seule application.">
+<meta name="theme-color" content="#14213d">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GMR Restaurant">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<style>:root{--bg:#f4f5f9;--card:#fff;--ink:#16213e;--mut:#6a7390;--bd:#e3e6ef;--navy:#14213d;--navy2:#26417a;--gold:#ffb703;--gold2:#fb8500;--ok:#12a36b;--bad:#e5383b;--acc:#fb8500;--kpi:#26417a;--sh:0 6px 22px rgba(20,33,61,.08)}
 @media(prefers-color-scheme:dark){:root{--bg:#0d1325;--card:#161f38;--ink:#eef1fb;--mut:#93a0c4;--bd:#27345a;--kpi:#ffc93c;--sh:0 6px 22px rgba(0,0,0,.35)}}
 *{box-sizing:border-box}
 body{margin:0;font:15px/1.55 "Segoe UI",system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--ink)}
@@ -51,6 +63,10 @@ body.auth{background:radial-gradient(circle at 15% 0,#2f5aa8 0,#14213d 55%) fixe
 body.auth #hdr{background:transparent;box-shadow:none;position:static}
 body.auth main{padding-top:0}body.auth .card{box-shadow:0 24px 70px rgba(0,0,0,.45);border:0;border-radius:22px;padding:26px}
 .brand{font-size:26px;font-weight:800;margin:0}.brand span{color:var(--gold2)}
+.splash-brand{text-align:center;margin-bottom:8px}
+.splash-logo{font-size:48px;line-height:1;margin-bottom:8px;filter:drop-shadow(0 4px 12px rgba(255,183,3,.4))}
+.brand-title{font-size:22px;font-weight:800;margin:0 0 6px;line-height:1.25;letter-spacing:-.3px;background:linear-gradient(135deg,#ffb703,#fb8500);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.brand-sub{font-size:13px;margin:0 0 4px}
 body.auth #hdr>b{display:none}body.auth #hdr{justify-content:flex-end}
 nav{position:static;flex-wrap:nowrap;scrollbar-width:thin}#hdr{position:static}
 .gal{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;margin-bottom:10px}.gal.ph{height:90px;align-items:center;justify-content:center;font-size:34px;background:rgba(255,183,3,.15);border-radius:12px}
@@ -99,7 +115,11 @@ nav:empty{display:none;padding:0;border:0;height:0;overflow:hidden}
 </style></head><body>
 <div id="hdr"></div>
 <main><div class="card col" style="max-width:420px;margin:30px auto">
-<h2 class="brand">🍽️ Resto<span>Gest</span></h2><div class="mut">Gérez votre restaurant, même sans connexion.</div>
+<div class="splash-brand">
+  <div class="splash-logo">🍽️</div>
+  <h1 class="brand-title">Gestion Multiples<br>de Restaurant</h1>
+  <p class="mut brand-sub">Gérez vos restaurants, commandes et livraisons — même hors ligne.</p>
+</div>
 <div class="row" id="tabs"></div><div id="f" class="col"></div><div id="msg" style="color:var(--bad)"></div>
 </div></main>
 <script src="db.js"></script>
