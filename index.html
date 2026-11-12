@@ -230,15 +230,17 @@ function detectRestPos(done){
   );
 }
 async function pwHash(v){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('rg-pw:'+v));return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('')}
-async function login(){const d=D.get(),id=tel.value.trim(),p=pwd.value;let u=null;
- for(const x of d.users){if(x.phone!=id&&x.name!=id)continue;
-  if(x.needsSetup&&isOwnerAccount(x)){
-   if(p.length<6)return msg.textContent='Première connexion : choisissez un mot de passe de 6 caractères minimum.';
-   const c=prompt('Première connexion : confirmez votre nouveau mot de passe');
-   if(c!==p)return msg.textContent='Les deux mots de passe ne correspondent pas.';
-   x.passHash=await pwHash(p);delete x.needsSetup;D.save(d);u=x;break}
-  if((x.pass!=null&&x.pass==p)||(x.passHash&&p&&x.passHash===await pwHash(p))){u=x;break}}
- if(!u)return msg.textContent='Identifiants incorrects.';store.s('s','uid',u.id);navTo(isOwnerAccount(u)?'owner.html':go[u.role])}
+async function login(){const d=D.get(),id=tel.value.trim(),p=pwd.value,nz=x=>String(x||'').trim().toLocaleLowerCase('fr');
+ const c=d.users.filter(x=>x.phone==id||nz(x.name)==nz(id));let u=null;
+ for(const x of c){if((x.pass!=null&&x.pass==p)||(x.passHash&&p&&x.passHash===await pwHash(p))){u=x;break}}
+ if(!u){const o=c.find(x=>x.needsSetup&&isOwnerAccount(x));
+  if(o){if(p.length<6)return msg.textContent='Première connexion : choisissez un mot de passe de 6 caractères minimum.';
+   const c2=document.getElementById('pwSetup2');
+   if(!c2){pwd.insertAdjacentHTML('afterend','<input id="pwSetup2" type="password" placeholder="Confirmez le mot de passe" autocomplete="new-password">');return msg.textContent='Première connexion : confirmez votre mot de passe, puis appuyez sur Se connecter.'}
+   if(c2.value!==p)return msg.textContent='Les deux mots de passe ne correspondent pas.';
+   o.passHash=await pwHash(p);delete o.needsSetup;D.save(d);u=o}}
+ if(!u)return msg.textContent='Identifiants incorrects.';
+ store.s('s','uid',u.id);navTo(isOwnerAccount(u)?'owner.html':go[u.role])}
 async function hashAnswer(v){const s=String(v||'').trim().toLocaleLowerCase('fr');if(!s)return '';if(window.crypto&&crypto.subtle){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('')}return btoa(unescape(encodeURIComponent(s)))}
 async function recoverPassword(){const d=D.get(),id=document.getElementById('rid').value.trim(),ans=document.getElementById('ranswer').value,nw=document.getElementById('rpwd').value,cf=document.getElementById('rpwd2').value;const u=d.users.find(x=>x.phone===id||x.name===id);if(!u)return msg.textContent='Compte introuvable.';if(!u.securityAnswerHash)return msg.textContent='Ce compte ancien ne possède pas encore de réponse secrète enregistrée. Connectez-vous pour configurer la récupération.';if(await hashAnswer(ans)!==u.securityAnswerHash)return msg.textContent='Réponse de sécurité incorrecte.';if(nw.length<6)return msg.textContent='Le nouveau mot de passe doit contenir au moins 6 caractères.';if(nw!==cf)return msg.textContent='Les mots de passe ne correspondent pas.';u.pass=nw;D.save(d);view='l';draw();msg.style.color='var(--ok)';msg.textContent='Mot de passe réinitialisé. Connectez-vous.'}
 function owner(){const d=D.get();if(hasOwner())return;if(!nm.value.trim()||!pwd.value)return msg.textContent='Nom et mot de passe obligatoires.';if(pwd.value!=pw2.value)return msg.textContent='Les deux mots de passe ne sont pas identiques.';

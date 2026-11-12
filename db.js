@@ -32,13 +32,18 @@ function loadSync(){
   }
 }
 
+var retry=[];
+function flag(m){var b=document.getElementById('rgdb-banner');
+  if(!m){if(b)b.remove();return}
+  if(!b){b=document.createElement('div');b.id='rgdb-banner';b.style.cssText='position:fixed;left:8px;right:8px;bottom:8px;z-index:99999;background:#b3261e;color:#fff;padding:10px 12px;border-radius:10px;font:600 13px system-ui';(document.body||document.documentElement).appendChild(b)}
+  b.textContent='⚠️ Synchronisation impossible : '+m}
 function send(method,path,body,prefer){
   pending++;
   var h=Object.assign({},H);if(prefer)h.Prefer=prefer;
   return fetch(URL+'/rest/v1/'+path,{method:method,headers:h,body:body?JSON.stringify(body):undefined})
-    .then(function(r){if(!r.ok)console.warn('RGDB',r.status)})
-    .catch(function(e){console.warn('RGDB hors ligne',e)})
-    .then(function(){pending--});
+    .then(function(r){if(r.ok)return;return r.text().then(function(t){throw new Error(r.status+' '+t.slice(0,140))})})
+    .then(function(){pending--;if(!retry.length)flag('')},
+          function(e){pending--;retry.push([method,path,body,prefer]);flag(String(e.message||e));console.warn('RGDB',e)});
 }
 
 var D={
@@ -70,6 +75,7 @@ var D={
 /* Synchronisation périodique : récupère les changements des autres téléphones */
 function poll(){
   if(document.hidden||pending>0)return;
+  if(retry.length){var q=retry.splice(0);q.forEach(function(a){send.apply(null,a)});return}
   var v=ver;
   Promise.all(T.map(function(t){
     return fetch(URL+'/rest/v1/'+TB[t]+'?select=data&order=seq.asc',{headers:H}).then(function(r){if(!r.ok)throw 0;return r.text()}).then(rows);
