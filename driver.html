@@ -98,6 +98,7 @@ nav:empty{display:none;padding:0;border:0;height:0;overflow:hidden}
 .back-btn:hover{filter:brightness(1.1);transform:translateY(-1px)}
 </style></head><body>
 <div id="hdr"></div><main id="m"></main>
+<script src="db.js"></script>
 <script>let SH=window;try{if(window.parent!==window&&window.parent.nav)SH=window.parent}catch(e){}
 SH.__m=SH.__m||{l:{},s:{}};
 const store={g(w,k){try{const v=(w=='l'?localStorage:sessionStorage).getItem(k);if(v!==null)return v}catch(e){}return SH.__m[w][k]??null},
@@ -114,7 +115,7 @@ function trs(s){const L=TR[lang()];if(!L)return s;const m=s.match(/^(\s*)([\s\S]
 function trDom(root){if(lang()=='fr')return;const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;while(n=w.nextNode()){if(n.parentNode.tagName=='SCRIPT')continue;const v=trs(n.nodeValue);if(v!==n.nodeValue)n.nodeValue=v}
  root.querySelectorAll('[placeholder]').forEach(e=>{const v=trs(e.getAttribute('placeholder'));if(v!==e.getAttribute('placeholder'))e.setAttribute('placeholder',v)})}
 let _obs=null;function startTr(){if(_obs||lang()=='fr')return;const o=()=>_obs.observe(document.body,{childList:true,subtree:true,characterData:true});_obs=new MutationObserver(()=>{_obs.disconnect();trDom(document.body);o()});o();trDom(document.body)}
-const D={get(){let d=JSON.parse(store.g('l',K)||'null');if(!d){d={users:[],rests:[],orders:[]};store.s('l',K,JSON.stringify(d))}return d},save(d){store.s('l',K,JSON.stringify(d))}};
+const D=window.RGDB;
 const uid=()=>Math.random().toString(36).slice(2,9);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const me=()=>{const i=store.g('s','uid');return i&&D.get().users.find(u=>u.id==i)};
