@@ -122,7 +122,7 @@ let _obs=null;function startTr(){if(_obs||lang()=='fr')return;const o=()=>_obs.o
 const D=window.RGDB;
 const uid=()=>Math.random().toString(36).slice(2,9);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const me=()=>{const i=store.g('s','uid');return i&&D.get().users.find(u=>u.id==i)};
+const me=()=>{const i=store.g('s','uid');const u=i&&D.get().users.find(u=>u.id==i);return u&&!u.disabled?u:undefined};
 const inShell=SH!==window;
 const navTo=u=>inShell?parent.nav(u):(location=u.replace(/\.html$/,'')+'.html');
 const cardUrl=s=>inShell?'#card/'+s:'card.html?r='+s;
@@ -242,6 +242,7 @@ async function login(){const d=D.get(),id=tel.value.trim(),p=pwd.value,nz=x=>Str
    if(c2.value!==p)return msg.textContent='Les deux mots de passe ne correspondent pas.';
    o.passHash=await pwHash(p);delete o.needsSetup;D.save(d);u=o}}
  if(!u)return msg.textContent='Identifiants incorrects.';
+ if(u.disabled&&!isOwnerAccount(u))return msg.textContent='Ce compte est désactivé. Contactez l\'administrateur pour le faire réactiver.';
  store.s('s','uid',u.id);navTo(isOwnerAccount(u)?'owner.html':go[u.role])}
 async function hashAnswer(v){const s=String(v||'').trim().toLocaleLowerCase('fr');if(!s)return '';if(window.crypto&&crypto.subtle){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('')}return btoa(unescape(encodeURIComponent(s)))}
 async function recoverPassword(){const d=D.get(),id=document.getElementById('rid').value.trim(),ans=document.getElementById('ranswer').value,nw=document.getElementById('rpwd').value,cf=document.getElementById('rpwd2').value;const u=d.users.find(x=>x.phone===id||x.name===id);if(!u)return msg.textContent='Compte introuvable.';if(!u.securityAnswerHash)return msg.textContent='Ce compte ancien ne possède pas encore de réponse secrète enregistrée. Connectez-vous pour configurer la récupération.';if(await hashAnswer(ans)!==u.securityAnswerHash)return msg.textContent='Réponse de sécurité incorrecte.';if(nw.length<6)return msg.textContent='Le nouveau mot de passe doit contenir au moins 6 caractères.';if(nw!==cf)return msg.textContent='Les mots de passe ne correspondent pas.';u.pass=nw;D.save(d);view='l';draw();msg.style.color='var(--ok)';msg.textContent='Mot de passe réinitialisé. Connectez-vous.'}

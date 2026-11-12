@@ -122,7 +122,7 @@ let _obs=null;function startTr(){if(_obs||lang()=='fr')return;const o=()=>_obs.o
 const D=window.RGDB;
 const uid=()=>Math.random().toString(36).slice(2,9);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const me=()=>{const i=store.g('s','uid');return i&&D.get().users.find(u=>u.id==i)};
+const me=()=>{const i=store.g('s','uid');const u=i&&D.get().users.find(u=>u.id==i);return u&&!u.disabled?u:undefined};
 const inShell=SH!==window;
 const navTo=u=>inShell?parent.nav(u):(location=u.replace(/\.html$/,'')+'.html');
 const cardUrl=s=>inShell?'#card/'+s:'card.html?r='+s;
@@ -219,8 +219,9 @@ function proUI(r,s){
     <p class="mut">Le propriétaire vérifie la réception, puis active votre abonnement Pro.</p></div>`;
   }
   const f=r.proForm;
-  const opts=(f.methods||[]).map(m=>`<option value="${m.id}">${esc(m.name)}</option>`).join('');
-  const details=(f.methods||[]).map(m=>`<div class="mut" data-mid="${m.id}"><b>${esc(m.name)}</b> — ${esc(m.details||'Suivez les instructions du propriétaire')}</div>`).join('');
+  const live=((D.get().ownerPay||{}).methods||[]),ms=live.length?live:(f.methods||[]);
+  const opts=ms.map(m=>`<option value="${m.id}">${esc(m.name)}</option>`).join('');
+  const details=ms.map(m=>`<div class="row" style="justify-content:space-between;gap:8px;align-items:center;padding:8px 10px;border:1px solid var(--bd,#e3e6ef);border-radius:12px"><span class="mut" style="min-width:0;word-break:break-all"><b>${esc(m.name)}</b><br><span style="font-size:16px;color:inherit;font-weight:700">${esc(m.details||'Suivez les instructions du propriétaire')}</span></span>${m.details?`<button type="button" class="sec" data-copy="${esc(m.details)}" onclick="copyTxt(this)">📋 Copier</button>`:''}</div>`).join('');
   return `<div class="card col" style="border-inline-start:6px solid var(--gold)">
    <h3 style="margin:0">💳 Formulaire de paiement Pro</h3>
    <p>Montant : <b>${money(f.amount,f.currency)}</b> pour <b>${f.months} mois</b></p>
@@ -304,6 +305,9 @@ function reqPro(){
  upd(r=>{r.proRequest=Date.now();r.proPlanMonths=months;r.proPayment=null;r.proForm=null});
  toast('Demande Pro envoyée : '+months+' mois');render();
 }
+function copyTxt(b){const t=b.getAttribute('data-copy')||'';const ok=()=>{const x=b.textContent;b.textContent='✅ Copié';setTimeout(()=>b.textContent=x,1500)};
+ const fb=()=>{const a=document.createElement('textarea');a.value=t;a.style.cssText='position:fixed;opacity:0';document.body.appendChild(a);a.select();try{document.execCommand('copy');ok()}catch(e){prompt('Copiez ce numéro :',t)}a.remove()};
+ if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(t).then(ok,fb);else fb()}
 function submitProPay(){
  const r=R();if(!r||!r.proForm)return;
  const sel=document.getElementById('payMethod');
@@ -311,7 +315,7 @@ function submitProPay(){
  const note=(document.getElementById('payNote')?.value||'').trim();
  if(!sel||!sel.value)return alert('Choisissez un mode de paiement.');
  if(!ref)return alert('Indiquez le numéro de transaction ou la référence de paiement.');
- const method=(r.proForm.methods||[]).find(m=>m.id===sel.value)||{id:sel.value,name:sel.options[sel.selectedIndex].text};
+ const method=((D.get().ownerPay||{}).methods||r.proForm.methods||[]).find(m=>m.id===sel.value)||(r.proForm.methods||[]).find(m=>m.id===sel.value)||{id:sel.value,name:sel.options[sel.selectedIndex].text};
  upd(x=>{x.proPayment={status:'submitted',methodId:method.id,methodName:method.name,reference:ref,note,submittedAt:Date.now()}});
  toast('Paiement transmis au propriétaire');render();
 }

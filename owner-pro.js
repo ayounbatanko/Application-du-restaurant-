@@ -32,8 +32,8 @@ function dash(d,pending){var today=ymd(Date.now()),ok=function(o){return DONE.in
 /* ---------- utilisateurs ---------- */
 function rows(d){var q=S.uq.toLowerCase(),l=d.users.filter(function(u){return u.role!=='owner'&&(S.ur=='all'||u.role==S.ur)&&(!q||(u.name||'').toLowerCase().indexOf(q)>=0||String(u.phone||'').indexOf(q)>=0)});
   return '<p class="mut">'+l.length+' utilisateur(s)</p>'+(l.map(function(u){var r=u.restId?d.rests.find(function(x){return x.id==u.restId}):null;
-    return '<div class="ur"><b>'+esc(u.name)+'</b> <span class="bd">'+(ROLE[u.role]||u.role)+'</span><br>📞 <a href="tel:'+esc(u.phone)+'">'+esc(u.phone)+'</a>'+(r?' · 🏪 '+esc(r.name):'')+' <span class="mut">· 🔒 mot de passe protégé</span>'+
-    '<div class="r2"><button type="button" onclick="OP.chat(\''+u.id+'\')">💬 Écrire</button><button type="button" class="sec" onclick="document.getElementById(\'rp-'+u.id+'\').style.display=\'flex\'">🔑 Nouveau mot de passe</button><button type="button" class="bad" onclick="OP.del(\''+u.id+'\')">Supprimer</button></div>'+
+    return '<div class="ur"><b>'+esc(u.name)+'</b> <span class="bd">'+(ROLE[u.role]||u.role)+'</span>'+(u.disabled?' <span class="bd" style="background:#fde2e4;color:#c1272b">⏸ Désactivé</span>':'')+'<br>📞 <a href="tel:'+esc(u.phone)+'">'+esc(u.phone)+'</a>'+(r?' · 🏪 '+esc(r.name):'')+' <span class="mut">· 🔒 mot de passe protégé</span>'+
+    '<div class="r2"><button type="button" onclick="OP.chat(\''+u.id+'\')">💬 Écrire</button><button type="button" class="sec" onclick="document.getElementById(\'rp-'+u.id+'\').style.display=\'flex\'">🔑 Nouveau mot de passe</button>'+(isOwnerAccount(u)?'':(u.disabled?'<button type="button" onclick="OP.tog(\''+u.id+'\')">✅ Réactiver le compte</button>':'<button type="button" class="bad" onclick="OP.tog(\''+u.id+'\')">⏸ Désactiver</button>'))+'</div>'+
     '<div class="r2" id="rp-'+u.id+'" style="display:none"><input id="np-'+u.id+'" placeholder="Mot de passe provisoire (6 min.)" style="flex:1"><button type="button" onclick="OP.reset(\''+u.id+'\')">Valider</button></div></div>'}).join('')||'<p class="mut">Aucun résultat.</p>')}
 function users(d){var n=function(r){return d.users.filter(function(u){return u.role==r}).length};
   return '<div class="card col"><h3 style="margin:0">➕ Ajouter un client</h3><input id="ncName" placeholder="Nom du client"><input id="ncPhone" type="tel" placeholder="Numéro de téléphone"><input id="ncPass" placeholder="Mot de passe provisoire (6 caractères min.)"><button type="button" onclick="OP.addClient()">Enregistrer le client</button><p class="mut">Le client se connecte avec son numéro et ce mot de passe. Il pourra le changer dans « Paramètres du compte ».</p></div>'+
@@ -45,7 +45,10 @@ async function addClient(){var nm=ncName.value.trim(),ph=ncPhone.value.trim(),pw
   d.users.push({id:uid(),role:'client',name:nm,phone:ph,passHash:await pwHash(pw),created:Date.now(),addedByOwner:true});D.save(d);toast('Client ajouté : '+nm);refresh()}
 async function reset(id){var p=document.getElementById('np-'+id).value;if(p.length<6)return alert('6 caractères minimum.');var d=D.get(),u=d.users.find(function(x){return x.id==id});if(!u)return;
   u.passHash=await pwHash(p);delete u.pass;D.save(d);toast('Mot de passe de '+u.name+' réinitialisé. Communiquez-le lui.');document.getElementById('rp-'+id).style.display='none'}
-function del(id){var d=D.get(),u=d.users.find(function(x){return x.id==id});if(!u||!confirm('Supprimer '+u.name+' ? Cette action est définitive.'))return;d.users=d.users.filter(function(x){return x.id!=id});D.save(d);uRefresh()}
+function tog(id){var d=D.get(),u=d.users.find(function(x){return x.id==id});if(!u||isOwnerAccount(u))return;
+  if(u.disabled){if(!confirm('Réactiver le compte de '+u.name+' ? Il retrouvera toutes ses données.'))return;delete u.disabled;delete u.disabledAt}
+  else{if(!confirm('Désactiver le compte de '+u.name+' ? Il ne pourra plus se connecter, mais ses données sont conservées. Vous pourrez le réactiver à tout moment.'))return;u.disabled=true;u.disabledAt=Date.now()}
+  D.save(d);toast(u.disabled?'Compte désactivé : '+u.name:'Compte réactivé : '+u.name);uRefresh()}
 
 /* ---------- rapports ---------- */
 function range(){if(!S.from){var t=new Date();S.to=ymd(t);t.setDate(t.getDate()-29);S.from=ymd(t)}return [new Date(S.from+'T00:00:00').getTime(),new Date(S.to+'T00:00:00').getTime()+864e5]}
@@ -79,5 +82,5 @@ function inner(d,pending,payCfg,cards){switch(oTab){
   case 'rest':return payCfg+'<h3>Restaurants & abonnements Pro</h3>'+cards;
   case 'users':return users(d);case 'chat':return RGChat.ownerView();case 'rep':return report(d);case 'acc':return passwordCard();
   default:return dash(d,pending)}}
-window.OP={bar:bar,go:go,body:body,addClient:addClient,reset:reset,del:del,q:function(v){S.uq=v;uRefresh()},r:function(v){S.ur=v;uRefresh()},chat:function(id){oTab='chat';RGChat.open(id)},rng:rng,quick:quick,print:print};
+window.OP={bar:bar,go:go,body:body,addClient:addClient,reset:reset,tog:tog,q:function(v){S.uq=v;uRefresh()},r:function(v){S.ur=v;uRefresh()},chat:function(id){oTab='chat';RGChat.open(id)},rng:rng,quick:quick,print:print};
 })();

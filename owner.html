@@ -121,7 +121,7 @@ let _obs=null;function startTr(){if(_obs||lang()=='fr')return;const o=()=>_obs.o
 const D=window.RGDB;
 const uid=()=>Math.random().toString(36).slice(2,9);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const me=()=>{const i=store.g('s','uid');return i&&D.get().users.find(u=>u.id==i)};
+const me=()=>{const i=store.g('s','uid');const u=i&&D.get().users.find(u=>u.id==i);return u&&!u.disabled?u:undefined};
 const inShell=SH!==window;
 const navTo=u=>inShell?parent.nav(u):(location=u.replace(/\.html$/,'')+'.html');
 const cardUrl=s=>inShell?'#card/'+s:'card.html?r='+s;
@@ -272,7 +272,7 @@ function render(force){
   <h3 style="margin:0">💳 Modes de paiement Pro</h3>
   <p class="mut">Ces modes seront proposés aux restaurants dans le formulaire de paiement.</p>
   ${(d.ownerPay.methods||[]).map(m=>`<div class="row"><div class="g"><b>${esc(m.name)}</b><div class="mut">${esc(m.details||'')}</div></div><button class="bad sec" onclick="delMethod('${m.id}')">Supprimer</button></div>`).join('')||'<p class="mut">Aucun mode pour l\'instant (Orange Money, Wave, Moov, virement…).</p>'}
-  <div class="row"><input id="pmName" class="g" placeholder="Nom (ex. Orange Money)"><input id="pmDet" class="g" placeholder="Détails (n°, IBAN, instructions)"></div>
+  <div class="row"><input id="pmName" class="g" placeholder="Nom (ex. Orange Money)"><input id="pmDet" class="g" placeholder="N° à copier (numéro, IBAN, instructions)"></div>
   <button type="button" onclick="addMethod()">Ajouter un mode de paiement</button>
   <hr style="border:0;border-top:1px solid var(--bd);width:100%">
   <b>Tarifs Pro par durée</b>
