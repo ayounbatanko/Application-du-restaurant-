@@ -77,10 +77,13 @@ function print(){range();var h='<!doctype html><html><head><meta charset="utf-8"
   var f=document.createElement('iframe');f.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';document.body.appendChild(f);var w=f.contentWindow;w.document.open();w.document.write(h);w.document.close();
   setTimeout(function(){w.focus();w.print();setTimeout(function(){f.remove()},3000)},400)}
 
+function supCard(){var s=(ensurePay().ownerPay.support)||{};
+  return '<div class="card col"><h3 style="margin:0">🆘 Contact support (page de connexion)</h3><p class="mut">Affichés aux visiteurs dans le bouton Support : WhatsApp et appel (avec indicatif pays, ex. 22507000000).</p><input id="supWa" type="tel" placeholder="Numéro WhatsApp" value="'+esc(s.wa||'')+'"><input id="supTel" type="tel" placeholder="Numéro pour appeler" value="'+esc(s.tel||'')+'"><button type="button" onclick="OP.saveSup()">Enregistrer</button></div>'}
+function saveSup(){var d=ensurePay();d.ownerPay.support={wa:supWa.value.trim(),tel:supTel.value.trim()};D.save(d);toast('Contact support enregistré')}
 function body(d,pending,payCfg,cards){return '<div class="fade">'+inner(d,pending,payCfg,cards)+'</div>'}
 function inner(d,pending,payCfg,cards){switch(oTab){
   case 'rest':return payCfg+'<h3>Restaurants & abonnements Pro</h3>'+cards;
-  case 'users':return users(d);case 'chat':return RGChat.ownerView();case 'rep':return report(d);case 'acc':return passwordCard();
+  case 'users':return users(d);case 'chat':return RGChat.ownerView();case 'rep':return report(d);case 'acc':return supCard()+passwordCard();
   default:return dash(d,pending)}}
-window.OP={bar:bar,go:go,body:body,addClient:addClient,reset:reset,tog:tog,q:function(v){S.uq=v;uRefresh()},r:function(v){S.ur=v;uRefresh()},chat:function(id){oTab='chat';RGChat.open(id)},rng:rng,quick:quick,print:print};
+window.OP={saveSup:saveSup,bar:bar,go:go,body:body,addClient:addClient,reset:reset,tog:tog,q:function(v){S.uq=v;uRefresh()},r:function(v){S.ur=v;uRefresh()},chat:function(id){oTab='chat';RGChat.open(id)},rng:rng,quick:quick,print:print};
 })();
