@@ -33,6 +33,7 @@ function scan(d0){
     if(owner){if(m.from=='user'&&!m.read){var s=(d.users.find(function(x){return x.id==m.uid})||{}).name||'Utilisateur';ev.push({k:'m'+m.id,t:'💬 Message de '+s,b:m.text,tag:'chat'})}}
     else if(m.uid==u.id&&m.from=='owner'&&!m.read)ev.push({k:'m'+m.id,t:'💬 Nouveau message de l\'administrateur',b:m.text,tag:'chat'})});
   if(u.role=='client')(d.orders||[]).forEach(function(o){if(o.clientId==u.id&&o.status!='en attente')ev.push({k:'o'+o.id+o.status,t:'🛵 Commande #'+o.id,b:'Statut : '+o.status,tag:'ord'+o.id})});
+  if(!owner&&window.RGChat&&RGChat.bcFor)RGChat.bcFor(u.id).forEach(function(m){ev.push({k:'b'+m.id,t:'📢 Annonce de l\'administrateur',b:m.text,tag:'bc'})});
   var r=u.restId&&(d.rests||[]).find(function(x){return x.id==u.restId});
   if(r&&!owner){
     if(r.proForm&&r.proForm.sentAt)ev.push({k:'f'+r.proForm.sentAt,t:'💳 Formulaire de paiement Pro reçu',b:'Ouvrez l\'application pour choisir votre moyen de paiement.',tag:'pro'});
@@ -63,7 +64,7 @@ function paintB(){if(!BC.have)return;var btns=document.querySelectorAll('button[
     else if(BC.cl&&c.indexOf("tab='myorders'")>=0)setB(btns[i],BC.o)}}
 function badges(d){var u;try{u=me()}catch(e){return}if(!u||u.role=='owner')return;
   if(!d){try{d=RGDB.get()}catch(e){return}}
-  var nm=0;(d.chats||[]).forEach(function(m){if(m.uid==u.id&&m.from=='owner'&&!m.read)nm++});
+  var nm=0;(d.chats||[]).forEach(function(m){if(m.uid==u.id&&m.from=='owner'&&!m.read)nm++});if(window.RGChat&&RGChat.bcUnread)nm+=RGChat.bcUnread(u.id);
   var o=0,btn=document.querySelector("button[onclick*=\"tab='myorders'\"]");
   if(u.role=='client')o=ordersCount(u,d,!!(btn&&btn.className.indexOf('on')>=0));
   BC={nm:nm,o:o,cl:u.role=='client',have:true};paintB()}
@@ -89,7 +90,7 @@ function supOpen(){if(document.getElementById('supOv'))return;
   var ov=document.createElement('div');ov.id='supOv';ov.style.cssText='position:fixed;inset:0;z-index:99998;background:rgba(10,15,30,.6);display:flex;align-items:flex-end;justify-content:center';
   ov.innerHTML='<div style="background:#fff;color:#14213d;width:100%;max-width:460px;max-height:92vh;overflow:auto;border-radius:20px 20px 0 0;padding:18px;display:flex;flex-direction:column;gap:10px"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:18px">🆘 Support</b><button type="button" id="supX" class="sec" style="padding:6px 12px">✕</button></div>'+
   '<span style="color:#667;font-size:13px">Mot de passe oublié, compte désactivé, autre souci : écrivez-nous. Utilisez le même numéro pour lire notre réponse ici.</span>'+(links?'<div style="display:flex;gap:8px">'+links+'</div>':'')+
-  '<input id="supName" placeholder="Votre nom"><input id="supPhone" type="tel" placeholder="Votre numéro de téléphone"><div id="supMsgs" style="max-height:200px;overflow:auto"></div><textarea id="supText" rows="3" placeholder="Décrivez votre problème…" style="resize:none"></textarea><button type="button" id="supSend">Envoyer ➤</button><span id="supInfo" style="color:#12a36b;font-size:13px"></span></div>';
+  '<div id="supInfo" style="display:none;padding:10px 12px;border-radius:12px;background:#e3f7ee;color:#0a7a4f;font-weight:700;font-size:14px"></div><input id="supName" placeholder="Votre nom"><input id="supPhone" type="tel" placeholder="Votre numéro de téléphone"><div id="supMsgs" style="max-height:200px;overflow:auto"></div><textarea id="supText" rows="3" placeholder="Décrivez votre problème…" style="resize:none"></textarea><button type="button" id="supSend">Envoyer ➤</button></div>';
   document.body.appendChild(ov);
   var sv=ls('rg_guest');if(sv){try{sv=JSON.parse(sv);supName.value=sv.n||'';supPhone.value=sv.p||''}catch(e){}}
   document.getElementById('supX').onclick=function(){clearInterval(supT);ov.remove()};
@@ -98,10 +99,15 @@ function supOpen(){if(document.getElementById('supOv'))return;
   document.getElementById('supSend').onclick=function(){var n=supName.value.trim(),p=digits(supPhone.value),t=supText.value.trim();
     if(!n||p.length<6)return alert('Indiquez votre nom et un numéro de téléphone valide.');if(!t)return alert('Écrivez votre message.');
     var dd=RGDB.get();dd.chats.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,7),uid:'g_'+p,from:'user',guest:true,gname:n.slice(0,60),gphone:supPhone.value.trim().slice(0,30),text:t.slice(0,1000),ts:Date.now(),read:false});
-    RGDB.save(dd);ls('rg_guest',JSON.stringify({n:n,p:supPhone.value.trim()}));supText.value='';supInfo.textContent='✅ Message envoyé. Revenez ici avec le même numéro pour lire la réponse.';supDraw()};
+    RGDB.save(dd);ls('rg_guest',JSON.stringify({n:n,p:supPhone.value.trim()}));supText.value='';supInfo.style.display='block';supInfo.textContent='✅ Message envoyé à l\'administrateur. Revenez ici avec le même numéro pour lire sa réponse.';supInfo.scrollIntoView({block:'center'});supDraw()};
   supDraw();supT=setInterval(supDraw,3000)}
 
-function init(){apkBox();supportBox();setInterval(tick,2500);setTimeout(tick,600);try{new MutationObserver(dpaint).observe(document.body,{childList:true,subtree:true})}catch(e){}}
+/* ---------- Pas de suggestion / génération de mot de passe du clavier ---------- */
+var st2=document.createElement('style');st2.textContent='input.rg-pw{-webkit-text-security:disc;text-security:disc}';document.head.appendChild(st2);
+function noPw(){var l=document.querySelectorAll('input[type=password]'),i,e;
+  for(i=0;i<l.length;i++){e=l[i];e.setAttribute('type','text');e.classList.add('rg-pw');e.setAttribute('autocomplete','off');e.setAttribute('autocapitalize','none');e.setAttribute('autocorrect','off');e.setAttribute('spellcheck','false');e.setAttribute('data-lpignore','true');e.setAttribute('data-1p-ignore','true');e.setAttribute('data-form-type','other');e.setAttribute('inputmode','text')}
+  var u=document.querySelectorAll('input[autocomplete=username],input[autocomplete=current-password],input[autocomplete=new-password]');for(i=0;i<u.length;i++)u[i].setAttribute('autocomplete','off')}
+function init(){noPw();try{new MutationObserver(noPw).observe(document.documentElement,{childList:true,subtree:true})}catch(e){}apkBox();supportBox();setInterval(tick,2500);setTimeout(tick,600);try{new MutationObserver(dpaint).observe(document.body,{childList:true,subtree:true})}catch(e){}}
 if(document.readyState=='loading')document.addEventListener('DOMContentLoaded',init);else init();
 window.RGNotif={show:show,scan:scan,tick:tick};
 })();

@@ -45,20 +45,22 @@ function flag(m){var b=document.getElementById('rgdb-banner');
   if(!m){if(b)b.remove();return}
   if(!b){b=document.createElement('div');b.id='rgdb-banner';b.style.cssText='position:fixed;left:8px;right:8px;bottom:8px;z-index:99999;background:#b3261e;color:#fff;padding:10px 12px;border-radius:10px;font:600 13px system-ui';(document.body||document.documentElement).appendChild(b)}
   b.textContent='⚠️ Synchronisation impossible : '+m}
-function send(method,path,body,prefer){
+function send(method,path,body,prefer,quiet){
   pending++;
   var h=Object.assign({},H);if(prefer)h.Prefer=prefer;
   return fetch(URL+'/rest/v1/'+path,{method:method,headers:h,body:body?JSON.stringify(body):undefined})
     .then(function(r){if(r.ok)return;return r.text().then(function(t){throw new Error(r.status+' '+t.slice(0,140))})})
-    .then(function(){pending--;if(!retry.length)flag('')},
-          function(e){pending--;var m=String(e.message||e);if(!/^[1-4]\d\d /.test(m))retry.push([method,path,body,prefer]);flag(m);console.warn('RGDB',e)});
+    .then(function(){pending--;if(!retry.length)flag('');return true},
+          function(e){pending--;var m=String(e.message||e);console.warn('RGDB',e);if(quiet)return false;if(!/^[1-4]\d\d /.test(m))retry.push([method,path,body,prefer]);flag(m);return false});
 }
 function inList(ids){return 'id=in.('+ids.map(function(i){return '"'+String(i).replace(/"/g,'')+'"'}).join(',')+')'}
 function put(t,up){
   if(t!=='chats'){send('POST',TB[t]+'?on_conflict=id',up,PREF);return}
   var tb=[],fb=[];
   up.forEach(function(x){var l=chatLoc[x.id]||(chatsTable?'t':'f');chatLoc[x.id]=l;if(l=='t')tb.push(x);else fb.push({id:CP+x.id,data:x.data})});
-  if(tb.length)send('POST','rg_chats?on_conflict=id',tb,PREF);
+  if(tb.length)send('POST','rg_chats?on_conflict=id',tb,PREF,true).then(function(ok){
+    if(ok)return;chatsTable=false;   /* table absente ou écriture refusée : on range les messages ailleurs */
+    var f2=tb.map(function(x){chatLoc[x.id]='f';return {id:CP+x.id,data:x.data}});send('POST','rg_orders?on_conflict=id',f2,PREF)});
   if(fb.length)send('POST','rg_orders?on_conflict=id',fb,PREF)}
 function drop(t,ids){
   if(t!=='chats'){send('DELETE',TB[t]+'?'+inList(ids));return}
